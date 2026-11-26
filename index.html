@@ -221,6 +221,25 @@
   </div>
 </div>
 
+<!-- ============ 导出命例选择弹层 ============ -->
+<div class="modal hidden" id="export-modal">
+  <div class="modal-backdrop" data-close="export-modal"></div>
+  <div class="sheet">
+    <div class="sheet-head">
+      <button type="button" class="sheet-btn" data-close="export-modal">取消</button>
+      <strong>选择要导出的命例</strong>
+      <button type="button" class="sheet-btn primary" id="btn-export-do">导出</button>
+    </div>
+    <div class="sheet-body">
+      <div class="export-actions">
+        <button type="button" class="tool-btn" id="btn-export-select-all">全选</button>
+        <button type="button" class="tool-btn" id="btn-export-clear">清空</button>
+      </div>
+      <div class="export-list" id="export-list"></div>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 <input type="file" id="file-import" accept="application/json,.json" class="hidden">
 
