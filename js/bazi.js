@@ -169,13 +169,29 @@
       var gz = d.getGanZhi() || '';
       var gan = gz.charAt(0);
       var zhi = gz.charAt(1);
+      // 该步大运覆盖的 10 个流年
+      var liunianList = (d.getLiuNian() || []).map(function (ln) {
+        var gz = ln.getGanZhi() || '';
+        var lg = gz.charAt(0);
+        var lz = gz.charAt(1);
+        return {
+          year: ln.getYear(),
+          ganzhi: gz,
+          gan: lg,
+          zhi: lz,
+          shen: lg ? shen(dayGan, lg) : '',
+          dishi: lz ? dishi(dayGan, lz) : '',
+          nayin: LunarUtil.NAYIN[gz] || ''
+        };
+      });
       return {
         shen: gan ? shen(dayGan, gan) : '',
         gan: gan,
         zhi: zhi,
         age: d.getStartAge(),
         year: d.getStartYear(),
-        dishi: zhi ? dishi(dayGan, zhi) : ''
+        dishi: zhi ? dishi(dayGan, zhi) : '',
+        liunian: liunianList
       };
     });
 
