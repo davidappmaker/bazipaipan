@@ -179,6 +179,21 @@
       };
     });
 
+    // 流年（当前公历年的太岁干支，十神与长生相对日主）
+    var liunianYear = new Date().getFullYear();
+    var liunianGanzhi = LunarYear.fromYear(liunianYear).getGanZhi();
+    var liunianGan = liunianGanzhi.charAt(0);
+    var liunianZhi = liunianGanzhi.charAt(1);
+    var liunian = {
+      year: liunianYear,
+      ganzhi: liunianGanzhi,
+      gan: liunianGan,
+      zhi: liunianZhi,
+      shen: liunianGan ? shen(dayGan, liunianGan) : '',
+      dishi: liunianZhi ? dishi(dayGan, liunianZhi) : '',
+      nayin: LunarUtil.NAYIN[liunianGanzhi] || ''
+    };
+
     var correctionText = null;
     if (correctionMinutes !== null) {
       var sign = correctionMinutes >= 0 ? '+' : '−';
@@ -202,6 +217,7 @@
       weekday: '星期' + solar.getWeekInChinese(),
       ageText: ageText(beijing),
       pillars: pillars,
+      liunian: liunian,
       yun: {
         startText: '命主从' + yun.getStartYear() + '岁' + yun.getStartMonth() + '月' + yun.getStartDay() + '天开始行大运',
         jiaoText: '于每一交运年的' + startLunar.getMonthInChinese() + '月' + startLunar.getDayInChinese() + '日交运',
