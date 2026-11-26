@@ -97,11 +97,7 @@
     var labelW = 1500;
     var colW = 2062;
     var widths = [labelW, colW, colW, colW, colW];
-    var header = [cell(cellPara('项目', { bold: true, size: 21 }), labelW, 'EDEDED')];
-    ['年柱', '月柱', '日柱', '时柱'].forEach(function (name) {
-      header.push(cell(cellPara(name, { bold: true, size: 22 }), colW, 'EDEDED'));
-    });
-    var rows = [header.join('')];
+    var rows = [];
 
     function addRow(label, values, opts) {
       opts = opts || {};
@@ -135,12 +131,7 @@
     var colW = Math.floor((9746 - labelW) / list.length);
     var widths = [labelW];
     for (var i = 0; i < list.length; i++) widths.push(colW);
-
-    var header = [cell(cellPara('项目', { bold: true }), labelW, 'EDEDED')];
-    list.forEach(function (_, i) {
-      header.push(cell(cellPara('第' + (i + 1) + '运', { bold: true }), colW, 'EDEDED'));
-    });
-    var rows = [header.join('')];
+    var rows = [];
 
     function addRow(label, values, opts) {
       opts = opts || {};
@@ -250,8 +241,6 @@
 
     html += sectionTitle('三、备注');
     html += para(run(inp.remark || '无'), { after: 120 });
-
-    html += para(run('本命例由「八字排盘」生成 · 导出时间：' + new Date().toLocaleString('zh-CN'), { size: 16, color: '999999' }), { align: 'center', before: 240 });
     return html;
   }
 
