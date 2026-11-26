@@ -71,7 +71,10 @@
     <header class="navbar">
       <button class="nav-btn nav-left" id="btn-result-back">返回</button>
       <h1 class="nav-title">八字排盘内容</h1>
-      <button class="nav-btn nav-right" id="btn-result-to-input">排盘界面</button>
+      <div class="nav-right-actions">
+        <button class="nav-btn" id="btn-result-to-input">排盘界面</button>
+        <button class="nav-btn" id="btn-result-settings">显示设置</button>
+      </div>
     </header>
 
     <main class="page page-result" id="result-content">
@@ -192,6 +195,27 @@
     <div class="dialog-actions">
       <button type="button" class="footer-btn" data-close="remark-modal">取消</button>
       <button type="button" class="footer-btn primary" id="btn-remark-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 显示设置弹层 ============ -->
+<div class="modal hidden" id="settings-modal">
+  <div class="modal-backdrop" data-close="settings-modal"></div>
+  <div class="sheet">
+    <div class="sheet-head">
+      <button type="button" class="sheet-btn" data-close="settings-modal">取消</button>
+      <strong>显示设置</strong>
+      <button type="button" class="sheet-btn primary" id="btn-settings-save">保存</button>
+    </div>
+    <div class="sheet-body">
+      <p class="sheet-note" style="margin-top:0">选择要在排盘结果中显示的项目，设置会一直保留。</p>
+      <label class="setting-row"><span>藏干</span><input type="checkbox" data-opt="hide" checked></label>
+      <label class="setting-row"><span>藏干十神</span><input type="checkbox" data-opt="hideShen" checked></label>
+      <label class="setting-row"><span>十神</span><input type="checkbox" data-opt="ganShen" checked></label>
+      <label class="setting-row"><span>十二长生</span><input type="checkbox" data-opt="dishi" checked></label>
+      <label class="setting-row"><span>纳音</span><input type="checkbox" data-opt="nayin" checked></label>
+      <p class="sheet-note">注：此处控制排盘结果的显示；导出的 Word 内容不受影响。</p>
     </div>
   </div>
 </div>
