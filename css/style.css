@@ -313,26 +313,34 @@ html, body {
 .yun-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 16px; }
 .yun-table {
   width: 100%;
-  min-width: 680px;
+  min-width: 330px;
   border-collapse: collapse;
   table-layout: fixed;
   font-size: 13px;
   text-align: center;
+}
+.yun-table td { padding: 3px 0; line-height: 1.3; }
+.yun-shen { color: #111; font-size: 13px; }
+.yun-gan, .yun-zhi { color: var(--dayun-blue); font-size: 17px; }
+.yun-num { color: #111; font-size: 12px; }
+.yun-dishi { color: var(--dayun-red); font-size: 14px; }
+
+.yun-table-flow {
+  min-width: 680px;
   background: #fffdf6;
   border: 1px solid #e6cca0;
 }
-.yun-table td {
+.yun-table-flow td {
   padding: 4px 1px;
-  line-height: 1.35;
   border: 1px solid #ead7b2;
   white-space: nowrap;
 }
-.yun-label { background: #fff8e7; color: #7a6a4f; font-size: 12px; font-weight: 500; }
-.yun-shen { color: #111; font-size: 13px; }
-.yun-gan { color: var(--gan-color); font-size: 16px; font-weight: 500; }
-.yun-dishi { color: var(--dayun-red); font-size: 13px; }
-.yun-num, .yun-year { color: #666; font-size: 12px; }
-.yun-liunian { color: #333; font-size: 15px; }
+.flow-label { background: #fff8e7; color: #7a6a4f; font-size: 12px; font-weight: 500; }
+.flow-shen { color: #111; font-size: 13px; }
+.flow-gan { color: var(--gan-color); font-size: 16px; font-weight: 500; }
+.flow-dishi { color: var(--dayun-red); font-size: 13px; }
+.flow-num, .flow-year { color: #666; font-size: 12px; }
+.flow-liunian { color: #333; font-size: 15px; }
 
 .palace-row {
   display: grid;
