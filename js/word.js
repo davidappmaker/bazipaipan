@@ -163,6 +163,43 @@
     return table(rows, widths);
   }
 
+  // 每步大运对应的 10 个流年表
+  function buildLiunianTables(result, disp) {
+    var list = result.yun && result.yun.list || [];
+    var html = '';
+    list.forEach(function (dayun, i) {
+      var lnList = dayun.liunian || [];
+      if (!lnList.length) return;
+      var labelW = 1180;
+      var colW = Math.floor((9746 - labelW) / lnList.length);
+      var widths = [labelW];
+      lnList.forEach(function () { widths.push(colW); });
+
+      var header = [cell(cellPara('项目', { bold: true }), labelW, 'EDEDED')];
+      lnList.forEach(function (ln) { header.push(cell(cellPara(String(ln.year), { bold: true }), colW, 'EDEDED')); });
+      var rows = [header.join('')];
+
+      function addRow(label, values, opts) {
+        opts = opts || {};
+        var r = [cell(cellPara(label, { bold: true }), labelW, 'F7F7F7')];
+        values.forEach(function (v) {
+          r.push(cell(cellPara(v, { bold: !!opts.bold, color: opts.color || '000000' }), colW, 'FFFFFF'));
+        });
+        rows.push(r.join(''));
+      }
+      addRow('流年', lnList.map(function (ln) { return ln.ganzhi; }), { bold: true, color: '2F5FE0' });
+      if (disp.ganShen) addRow('十神', lnList.map(function (ln) { return ln.shen; }));
+      if (disp.dishi) addRow('长生', lnList.map(function (ln) { return ln.dishi; }), { color: 'C81E1E' });
+      if (disp.nayin) addRow('纳音', lnList.map(function (ln) { return ln.nayin; }), { color: '8E44AD' });
+
+      var first = lnList[0].year;
+      var last = lnList[lnList.length - 1].year;
+      html += para(run('第' + (i + 1) + '步 ' + dayun.gan + dayun.zhi + '运 · ' + dayun.age + '岁起（' + first + '–' + last + '）', { bold: true }), { before: 120, after: 40 });
+      html += table(rows, widths);
+    });
+    return html;
+  }
+
   function buildCaseBody(result, index, total, disp) {
     var html = '';
     // 从第二例起强制另起一页，保证一个命例独占一页
@@ -189,14 +226,13 @@
     html += buildDayunTable(result, disp);
 
     var sectionNo = 3;
-    if (disp.liunian && result.liunian) {
-      var ln = result.liunian;
-      html += sectionTitle('三、流年');
-      html += infoLine('流年', ln.year + '年 ' + ln.ganzhi);
-      if (disp.ganShen) html += infoLine('十神', ln.shen);
-      html += infoLine('纳音', ln.nayin);
-      if (disp.dishi) html += infoLine('长生', ln.dishi);
-      sectionNo = 4;
+    if (disp.liunian) {
+      var lnTables = buildLiunianTables(result, disp);
+      if (lnTables) {
+        html += sectionTitle('三、流年（每步大运十年）');
+        html += lnTables;
+        sectionNo = 4;
+      }
     }
     html += sectionTitle((sectionNo === 4 ? '四' : '三') + '、备注');
     html += para(run(inp.remark || '无'), { after: 120 });
