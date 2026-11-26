@@ -84,6 +84,7 @@
     resultOrigin: 'input',
     manageMode: false,
     selected: {},
+    exportSelected: {},
     searchQuery: '',
     searchOpen: false,
     confirmAction: null,
@@ -583,6 +584,45 @@
     }).catch(function () { toast('导出失败'); });
   }
 
+  /* ---------- 导出命例选择 ---------- */
+  function openExportModal() {
+    var cases = CaseStore.list();
+    if (!cases.length) { toast('没有可导出的命例'); return; }
+    state.exportSelected = {};
+    cases.forEach(function (c) { state.exportSelected[c.id] = true; });
+    renderExportList();
+    $('export-modal').classList.remove('hidden');
+  }
+
+  function renderExportList() {
+    var cases = CaseStore.list();
+    $('export-list').innerHTML = cases.map(function (c) {
+      var meta = (c.calendar === 'lunar' && c.displayDate && c.displayDate.year)
+        ? formatDisplayDate('lunar', c.displayDate) : c.date + ' ' + c.time;
+      return '<label class="export-item">'
+        + '<input type="checkbox" class="export-check" data-id="' + esc(c.id) + '"'
+        + (state.exportSelected[c.id] ? ' checked' : '') + '>'
+        + '<span class="export-item-main">'
+        + '<span class="export-item-name">' + esc(c.name || '未命名') + '（' + (c.gender === 0 ? '女' : '男') + '）</span>'
+        + '<span class="export-item-meta">' + esc(meta)
+        + (c.remark ? ' · ' + esc(c.remark) : '') + '</span>'
+        + '</span></label>';
+    }).join('');
+  }
+
+  function selectedExportIds() {
+    return Object.keys(state.exportSelected).filter(function (k) { return state.exportSelected[k]; });
+  }
+
+  function doExportSelected() {
+    var ids = selectedExportIds();
+    if (!ids.length) { toast('请先选择要导出的命例'); return; }
+    var inputs = ids.map(function (id) { return CaseStore.get(id); }).filter(Boolean);
+    if (!inputs.length) { toast('命例不存在'); return; }
+    $('export-modal').classList.add('hidden');
+    exportResults(inputs, '八字命例_共' + inputs.length + '例');
+  }
+
   /* ---------- 事件绑定 ---------- */
   function bind() {
     $('btn-input-back').onclick = function () { showView('cases'); };
@@ -735,11 +775,20 @@
         toast('已删除 ' + n + ' 条命例');
       });
     };
-    $('btn-export-all').onclick = function () {
-      var cases = CaseStore.list();
-      if (!cases.length) { toast('没有可导出的命例'); return; }
-      exportResults(cases, '八字命例_全部' + cases.length + '例');
+    $('btn-export-all').onclick = openExportModal;
+    $('btn-export-select-all').onclick = function () {
+      CaseStore.list().forEach(function (c) { state.exportSelected[c.id] = true; });
+      renderExportList();
     };
+    $('btn-export-clear').onclick = function () {
+      state.exportSelected = {};
+      renderExportList();
+    };
+    $('btn-export-do').onclick = doExportSelected;
+    $('export-list').addEventListener('change', function (e) {
+      var box = e.target.closest ? e.target.closest('.export-check') : null;
+      if (box) state.exportSelected[box.dataset.id] = box.checked;
+    });
     $('btn-backup-cases').onclick = function () {
       var cases = CaseStore.list();
       if (!cases.length) { toast('没有可备份的命例'); return; }
