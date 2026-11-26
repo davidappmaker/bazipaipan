@@ -526,6 +526,14 @@ html, body {
   border: 1px solid #d5d5d8; border-radius: 7px; background: #fff;
 }
 .sheet-note { font-size: 13px; color: #999; line-height: 1.5; margin: 14px 0 0; }
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 2px; border-bottom: 1px solid #eee; font-size: 16px;
+}
+.setting-row:last-of-type { border-bottom: 0; }
+.setting-row input[type="checkbox"] {
+  width: 22px; height: 22px; accent-color: var(--blue); cursor: pointer;
+}
 .region-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .region-chip {
   padding: 8px 12px; font-family: inherit; font-size: 15px;
