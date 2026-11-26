@@ -464,7 +464,7 @@
       var selected = !!state.selected[c.id];
       var meta = (c.calendar === 'lunar' && c.displayDate && c.displayDate.year)
         ? formatDisplayDate('lunar', c.displayDate)
-        : c.date + ' ' + c.time;
+        : '公历：' + c.date + ' ' + c.time;
       return '<div class="case-item' + (selected ? ' selected' : '') + '" data-id="' + esc(c.id) + '">'
         + '<input type="checkbox" class="case-check" ' + (selected ? 'checked' : '') + ' data-id="' + esc(c.id) + '" aria-label="选择命例">'
         + '<div class="case-main" data-open="' + esc(c.id) + '">'
@@ -598,14 +598,13 @@
     var cases = CaseStore.list();
     $('export-list').innerHTML = cases.map(function (c) {
       var meta = (c.calendar === 'lunar' && c.displayDate && c.displayDate.year)
-        ? formatDisplayDate('lunar', c.displayDate) : c.date + ' ' + c.time;
+        ? formatDisplayDate('lunar', c.displayDate) : '公历：' + c.date + ' ' + c.time;
       return '<label class="export-item">'
         + '<input type="checkbox" class="export-check" data-id="' + esc(c.id) + '"'
         + (state.exportSelected[c.id] ? ' checked' : '') + '>'
         + '<span class="export-item-main">'
         + '<span class="export-item-name">' + esc(c.name || '未命名') + '（' + (c.gender === 0 ? '女' : '男') + '）</span>'
-        + '<span class="export-item-meta">' + esc(meta)
-        + (c.remark ? ' · ' + esc(c.remark) : '') + '</span>'
+        + '<span class="export-item-time">' + esc(meta) + '</span>'
         + '</span></label>';
     }).join('');
   }
