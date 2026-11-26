@@ -355,16 +355,32 @@
       + (d.dishi ? yunRows('yun-dishi', 'dishi') : '')
       + '</tbody></table></div>';
 
+    // 每步大运对应的 10 个流年
     var liunianHtml = '';
-    if (d.liunian && r.liunian) {
-      var ln = r.liunian;
-      liunianHtml = '<div class="liunian-box">'
-        + '<div class="liunian-title">' + ln.year + '年流年 · ' + esc(ln.ganzhi) + '</div>'
-        + '<div class="liunian-detail">'
-        + (d.ganShen ? '<span>十神：' + esc(ln.shen) + '</span>' : '')
-        + '<span>纳音：' + esc(ln.nayin) + '</span>'
-        + (d.dishi ? '<span>长生：' + esc(ln.dishi) + '</span>' : '')
-        + '</div></div>';
+    if (d.liunian && r.yun && r.yun.list && r.yun.list.length) {
+      var groups = '';
+      r.yun.list.forEach(function (dayun, gi) {
+        var list = dayun.liunian || [];
+        if (!list.length) return;
+        var col = function (cls, key) {
+          return '<tr>' + list.map(function (ln) { return '<td class="' + cls + '">' + esc(ln[key]) + '</td>'; }).join('') + '</tr>';
+        };
+        var first = list[0].year;
+        var last = list[list.length - 1].year;
+        var table = '<div class="yun-scroll"><table class="yun-table liunian-table"><tbody>'
+          + '<tr>' + list.map(function (ln) { return '<td class="liunian-year">' + ln.year + '</td>'; }).join('') + '</tr>'
+          + '<tr>' + list.map(function (ln) { return '<td class="liunian-gz">' + esc(ln.ganzhi) + '</td>'; }).join('') + '</tr>'
+          + (d.ganShen ? col('liunian-shen', 'shen') : '')
+          + (d.dishi ? col('liunian-dishi', 'dishi') : '')
+          + (d.nayin ? col('liunian-nayin', 'nayin') : '')
+          + '</tbody></table></div>';
+        groups += '<div class="liunian-group">'
+          + '<div class="liunian-group-title">第' + (gi + 1) + '步 ' + esc(dayun.gan + dayun.zhi)
+          + '运 · ' + dayun.age + '岁起（' + first + '–' + last + '）</div>'
+          + table + '</div>';
+      });
+      liunianHtml = '<div class="liunian-section">'
+        + '<div class="liunian-head">流年（每步大运十年）</div>' + groups + '</div>';
     }
 
     $('result-content').innerHTML = ''
