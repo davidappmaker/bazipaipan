@@ -54,7 +54,7 @@
   }
 
   var DISPLAY_KEY = 'bazi_pwa_display_v1';
-  var DISPLAY_DEFAULT = { hide: true, hideShen: true, ganShen: true, dishi: true, nayin: true };
+  var DISPLAY_DEFAULT = { hide: true, hideShen: true, ganShen: true, dishi: true, nayin: true, liunian: true };
   function loadDisplay() {
     var out = {};
     for (var k in DISPLAY_DEFAULT) out[k] = DISPLAY_DEFAULT[k];
@@ -355,11 +355,24 @@
       + (d.dishi ? yunRows('yun-dishi', 'dishi') : '')
       + '</tbody></table></div>';
 
+    var liunianHtml = '';
+    if (d.liunian && r.liunian) {
+      var ln = r.liunian;
+      liunianHtml = '<div class="liunian-box">'
+        + '<div class="liunian-title">' + ln.year + '年流年 · ' + esc(ln.ganzhi) + '</div>'
+        + '<div class="liunian-detail">'
+        + (d.ganShen ? '<span>十神：' + esc(ln.shen) + '</span>' : '')
+        + '<span>纳音：' + esc(ln.nayin) + '</span>'
+        + (d.dishi ? '<span>长生：' + esc(ln.dishi) + '</span>' : '')
+        + '</div></div>';
+    }
+
     $('result-content').innerHTML = ''
       + '<div class="result-info">' + info + '</div>'
       + '<div class="pillars">' + pillars + '</div>'
       + '<div class="yun-intro"><p>' + esc(r.yun.startText) + '</p><p>' + esc(r.yun.jiaoText) + '</p></div>'
       + yunHtml
+      + liunianHtml
       + '<div class="result-remark" data-edit-remark="result">'
       + '<div class="result-remark-head"><span>备注</span><span class="result-remark-edit">点击修改</span></div>'
       + '<div class="result-remark-text' + (r.input.remark ? '' : ' empty') + '">'
@@ -516,7 +529,7 @@
       catch (e) { toast('第 ' + (i + 1) + ' 例计算失败'); }
     }
     if (!results.length) return;
-    WordExport.exportWord(results, baseName).then(function (ok) {
+    WordExport.exportWord(results, baseName, state.display).then(function (ok) {
       toast(ok ? 'Word 已导出' : '导出失败');
     }).catch(function () { toast('导出失败'); });
   }
