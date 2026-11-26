@@ -93,7 +93,7 @@
     return para(run(label, { bold: true, size: 21 }) + run('：' + (value || ''), { size: 21 }), { after: 40 });
   }
 
-  function buildPillarsTable(result) {
+  function buildPillarsTable(result, disp) {
     var labelW = 1500;
     var colW = 2062;
     var widths = [labelW, colW, colW, colW, colW];
@@ -117,17 +117,17 @@
       rows.push(r.join(''));
     }
 
-    addRow('十神', result.pillars.map(function (p) { return p.ganShen; }));
-    addRow('天干', result.pillars.map(function (p) { return p.gan; }), { size: 36, bold: true, color: 'F0451F', font: '微软雅黑' });
-    addRow('地支', result.pillars.map(function (p) { return p.zhi; }), { size: 36, bold: true, color: 'F0451F', font: '微软雅黑' });
-    addRow('藏干', result.pillars.map(function (p) { return p.hide; }));
-    addRow('藏干十神', result.pillars.map(function (p) { return p.hideShen; }));
-    addRow('十二长生', result.pillars.map(function (p) { return p.dishi; }));
-    addRow('纳音', result.pillars.map(function (p) { return p.nayin; }), { color: '8E44AD' });
+    if (disp.ganShen) addRow('十神', result.pillars.map(function (p) { return p.ganShen; }));
+    addRow('天干', result.pillars.map(function (p) { return p.gan; }), { bold: true, color: 'F0451F' });
+    addRow('地支', result.pillars.map(function (p) { return p.zhi; }), { bold: true, color: 'F0451F' });
+    if (disp.hide) addRow('藏干', result.pillars.map(function (p) { return p.hide; }));
+    if (disp.hideShen) addRow('藏干十神', result.pillars.map(function (p) { return p.hideShen; }));
+    if (disp.dishi) addRow('十二长生', result.pillars.map(function (p) { return p.dishi; }));
+    if (disp.nayin) addRow('纳音', result.pillars.map(function (p) { return p.nayin; }), { color: '8E44AD' });
     return table(rows, widths);
   }
 
-  function buildDayunTable(result) {
+  function buildDayunTable(result, disp) {
     var list = result.yun.list || [];
     if (!list.length) return '';
     var labelW = 1180;
@@ -154,16 +154,16 @@
       rows.push(r.join(''));
     }
 
-    addRow('十神', list.map(function (d) { return d.shen; }));
-    addRow('天干', list.map(function (d) { return d.gan; }), { size: 28, bold: true, color: '2F5FE0' });
-    addRow('地支', list.map(function (d) { return d.zhi; }), { size: 28, bold: true, color: '2F5FE0' });
+    if (disp.ganShen) addRow('十神', list.map(function (d) { return d.shen; }));
+    addRow('天干', list.map(function (d) { return d.gan; }), { bold: true, color: '2F5FE0' });
+    addRow('地支', list.map(function (d) { return d.zhi; }), { bold: true, color: '2F5FE0' });
     addRow('起运岁', list.map(function (d) { return String(d.age); }));
     addRow('交运年', list.map(function (d) { return String(d.year); }));
-    addRow('地势', list.map(function (d) { return d.dishi; }), { color: 'C81E1E' });
+    if (disp.dishi) addRow('地势', list.map(function (d) { return d.dishi; }), { color: 'C81E1E' });
     return table(rows, widths);
   }
 
-  function buildCaseBody(result, index, total) {
+  function buildCaseBody(result, index, total, disp) {
     var html = '';
     // 从第二例起强制另起一页，保证一个命例独占一页
     html += para(run('八字排盘命例', { bold: true }), { align: 'center', after: 80, pageBreakBefore: index > 0 });
@@ -181,24 +181,35 @@
     html += infoLine('四柱', result.pillars.map(function (p) { return p.gan + p.zhi; }).join('  '));
 
     html += sectionTitle('一、四柱排盘');
-    html += buildPillarsTable(result);
+    html += buildPillarsTable(result, disp);
 
     html += sectionTitle('二、大运');
-    html += para(run(result.yun.startText, { size: 21 }), { after: 40 });
-    html += para(run(result.yun.jiaoText, { size: 21 }), { after: 80 });
-    html += buildDayunTable(result);
+    html += para(run(result.yun.startText), { after: 40 });
+    html += para(run(result.yun.jiaoText), { after: 80 });
+    html += buildDayunTable(result, disp);
 
-    html += sectionTitle('三、备注');
-    html += para(run(inp.remark || '无', { size: 21 }), { after: 120 });
+    var sectionNo = 3;
+    if (disp.liunian && result.liunian) {
+      var ln = result.liunian;
+      html += sectionTitle('三、流年');
+      html += infoLine('流年', ln.year + '年 ' + ln.ganzhi);
+      if (disp.ganShen) html += infoLine('十神', ln.shen);
+      html += infoLine('纳音', ln.nayin);
+      if (disp.dishi) html += infoLine('长生', ln.dishi);
+      sectionNo = 4;
+    }
+    html += sectionTitle((sectionNo === 4 ? '四' : '三') + '、备注');
+    html += para(run(inp.remark || '无'), { after: 120 });
 
     html += para(run('本命例由「八字排盘」生成 · 导出时间：' + new Date().toLocaleString('zh-CN'), { size: 16, color: '999999' }), { align: 'center', before: 240 });
     return html;
   }
 
-  function buildDocument(results) {
+  function buildDocument(results, display) {
+    var disp = display || { hide: true, hideShen: true, ganShen: true, dishi: true, nayin: true, liunian: true };
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<w:document xmlns:w="' + NS_W + '"><w:body>' +
-      results.map(function (r, i) { return buildCaseBody(r, i, results.length); }).join('') +
+      results.map(function (r, i) { return buildCaseBody(r, i, results.length, disp); }).join('') +
       '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>' +
       '<w:pgMar w:top="1134" w:right="1080" w:bottom="1134" w:left="1080" w:header="720" w:footer="720" w:gutter="0"/>' +
       '</w:sectPr></w:body></w:document>';
@@ -262,12 +273,12 @@
    * @param {Array} results Bazi.compute() 的结果数组
    * @param {String} baseName 文件名前缀
    */
-  function exportWord(results, baseName) {
+  function exportWord(results, baseName, display) {
     if (!results || !results.length) return Promise.resolve(false);
     var zip = new JSZip();
     zip.file('[Content_Types].xml', CONTENT_TYPES);
     zip.file('_rels/.rels', ROOT_RELS);
-    zip.file('word/document.xml', buildDocument(results));
+    zip.file('word/document.xml', buildDocument(results, display));
     zip.file('word/styles.xml', STYLES);
     zip.file('word/_rels/document.xml.rels', DOC_RELS);
     zip.file('docProps/core.xml', coreProps());
