@@ -127,26 +127,21 @@
     return table(rows, widths);
   }
 
-  function buildDayunTable(result, disp) {
-    var list = result.yun.list || [];
+  // 大运与流年合并表：每步大运一列，十年流年逐行排在同列下方
+  function buildDayunLiunianTable(result, disp) {
+    var list = (result.yun && result.yun.list) || [];
     if (!list.length) return '';
-    var labelW = 1180;
+    var labelW = 1080;
     var colW = Math.floor((9746 - labelW) / list.length);
     var widths = [labelW];
     for (var i = 0; i < list.length; i++) widths.push(colW);
 
-    var header = [cell(cellPara('项目', { bold: true, size: 20 }), labelW, 'EDEDED')];
-    list.forEach(function (_, i) {
-      header.push(cell(cellPara('第' + (i + 1) + '运', { bold: true, size: 19 }), colW, 'EDEDED'));
-    });
-    var rows = [header.join('')];
-
+    var rows = [];
     function addRow(label, values, opts) {
       opts = opts || {};
-      var r = [cell(cellPara(label, { bold: true, size: 19 }), labelW, 'F7F7F7')];
+      var r = [cell(cellPara(label, { bold: true }), labelW, 'F7F7F7')];
       values.forEach(function (v) {
         r.push(cell(cellPara(v, {
-          size: opts.size || 19,
           bold: !!opts.bold,
           color: opts.color || '000000'
         }), colW, 'FFFFFF'));
@@ -155,49 +150,28 @@
     }
 
     if (disp.ganShen) addRow('十神', list.map(function (d) { return d.shen; }));
-    addRow('天干', list.map(function (d) { return d.gan; }), { bold: true, color: '2F5FE0' });
-    addRow('地支', list.map(function (d) { return d.zhi; }), { bold: true, color: '2F5FE0' });
-    addRow('起运岁', list.map(function (d) { return String(d.age); }));
-    addRow('交运年', list.map(function (d) { return String(d.year); }));
-    if (disp.dishi) addRow('地势', list.map(function (d) { return d.dishi; }), { color: 'C81E1E' });
-    return table(rows, widths);
-  }
+    addRow('大运', list.map(function (d) { return d.gan + d.zhi; }), { bold: true, color: 'F0451F' });
+    if (disp.dishi) addRow('地势', list.map(function (d) { return d.dishiFull || d.dishi; }), { color: 'C81E1E' });
+    addRow('虚岁', list.map(function (d) { return String(d.age); }));
+    addRow('始于', list.map(function (d) { return String(d.year); }));
 
-  // 每步大运对应的 10 个流年表
-  function buildLiunianTables(result, disp) {
-    var list = result.yun && result.yun.list || [];
-    var html = '';
-    list.forEach(function (dayun, i) {
-      var lnList = dayun.liunian || [];
-      if (!lnList.length) return;
-      var labelW = 1180;
-      var colW = Math.floor((9746 - labelW) / lnList.length);
-      var widths = [labelW];
-      lnList.forEach(function () { widths.push(colW); });
-
-      var header = [cell(cellPara('项目', { bold: true }), labelW, 'EDEDED')];
-      lnList.forEach(function (ln) { header.push(cell(cellPara(String(ln.year), { bold: true }), colW, 'EDEDED')); });
-      var rows = [header.join('')];
-
-      function addRow(label, values, opts) {
-        opts = opts || {};
-        var r = [cell(cellPara(label, { bold: true }), labelW, 'F7F7F7')];
-        values.forEach(function (v) {
-          r.push(cell(cellPara(v, { bold: !!opts.bold, color: opts.color || '000000' }), colW, 'FFFFFF'));
-        });
-        rows.push(r.join(''));
+    if (disp.liunian) {
+      var maxLiunian = 0;
+      list.forEach(function (d) { maxLiunian = Math.max(maxLiunian, (d.liunian || []).length); });
+      for (var j = 0; j < maxLiunian; j++) {
+        (function (idx) {
+          addRow('流年' + (idx + 1), list.map(function (d) {
+            var ln = (d.liunian || [])[idx];
+            return ln ? ln.ganzhi : '';
+          }));
+        })(j);
       }
-      addRow('流年', lnList.map(function (ln) { return ln.ganzhi; }), { bold: true, color: '2F5FE0' });
-      if (disp.ganShen) addRow('十神', lnList.map(function (ln) { return ln.shen; }));
-      if (disp.dishi) addRow('长生', lnList.map(function (ln) { return ln.dishi; }), { color: 'C81E1E' });
-      if (disp.nayin) addRow('纳音', lnList.map(function (ln) { return ln.nayin; }), { color: '8E44AD' });
+    }
 
-      var first = lnList[0].year;
-      var last = lnList[lnList.length - 1].year;
-      html += para(run('第' + (i + 1) + '步 ' + dayun.gan + dayun.zhi + '运 · ' + dayun.age + '岁起（' + first + '–' + last + '）', { bold: true }), { before: 120, after: 40 });
-      html += table(rows, widths);
-    });
-    return html;
+    addRow('止于', list.map(function (d) {
+      return String(d.endYear != null ? d.endYear : d.year + 9);
+    }));
+    return table(rows, widths);
   }
 
   function buildCaseBody(result, index, total, disp) {
@@ -215,26 +189,23 @@
     if (result.correctionText) html += infoLine('真太阳时', result.correctionText.replace(/^真太阳时：/, ''));
     html += infoLine('农历', result.lunarText);
     html += infoLine('年龄', result.ageText + '，' + result.weekday);
+    if (result.taiyuan && result.taiyuan.ganzhi) {
+      html += infoLine('胎元', result.taiyuan.ganzhi + (result.taiyuan.nayin ? '（' + result.taiyuan.nayin + '）' : ''));
+    }
+    if (result.minggong && result.minggong.ganzhi) {
+      html += infoLine('命宫', result.minggong.ganzhi + (result.minggong.nayin ? '（' + result.minggong.nayin + '）' : ''));
+    }
     html += infoLine('四柱', result.pillars.map(function (p) { return p.gan + p.zhi; }).join('  '));
 
     html += sectionTitle('一、四柱排盘');
     html += buildPillarsTable(result, disp);
 
-    html += sectionTitle('二、大运');
+    html += sectionTitle('二、大运与流年');
     html += para(run(result.yun.startText), { after: 40 });
     html += para(run(result.yun.jiaoText), { after: 80 });
-    html += buildDayunTable(result, disp);
+    html += buildDayunLiunianTable(result, disp);
 
-    var sectionNo = 3;
-    if (disp.liunian) {
-      var lnTables = buildLiunianTables(result, disp);
-      if (lnTables) {
-        html += sectionTitle('三、流年（每步大运十年）');
-        html += lnTables;
-        sectionNo = 4;
-      }
-    }
-    html += sectionTitle((sectionNo === 4 ? '四' : '三') + '、备注');
+    html += sectionTitle('三、备注');
     html += para(run(inp.remark || '无'), { after: 120 });
 
     html += para(run('本命例由「八字排盘」生成 · 导出时间：' + new Date().toLocaleString('zh-CN'), { size: 16, color: '999999' }), { align: 'center', before: 240 });
