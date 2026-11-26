@@ -53,7 +53,23 @@
     return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes() };
   }
 
+  var DISPLAY_KEY = 'bazi_pwa_display_v1';
+  var DISPLAY_DEFAULT = { hide: true, hideShen: true, ganShen: true, dishi: true, nayin: true };
+  function loadDisplay() {
+    var out = {};
+    for (var k in DISPLAY_DEFAULT) out[k] = DISPLAY_DEFAULT[k];
+    try {
+      var raw = JSON.parse(localStorage.getItem(DISPLAY_KEY) || '{}');
+      for (var k2 in DISPLAY_DEFAULT) if (typeof raw[k2] === 'boolean') out[k2] = raw[k2];
+    } catch (e) {}
+    return out;
+  }
+  function saveDisplay(o) {
+    try { localStorage.setItem(DISPLAY_KEY, JSON.stringify(o)); } catch (e) {}
+  }
+
   var state = {
+    display: loadDisplay(),
     name: '',
     gender: 1,
     remark: '',
@@ -312,15 +328,16 @@
     info += '<p>年龄：' + esc(r.ageText) + '。出生当日:' + esc(r.weekday) + '</p>'
       + '<p>农历：' + esc(r.lunarText) + '</p>';
 
+    var d = state.display;
     var pillars = r.pillars.map(function (p) {
       return '<div class="pillar">'
-        + '<div class="p-gan-shen">' + esc(p.ganShen) + '</div>'
+        + (d.ganShen ? '<div class="p-gan-shen">' + esc(p.ganShen) + '</div>' : '')
         + '<div class="p-gan">' + esc(p.gan) + '</div>'
         + '<div class="p-zhi">' + esc(p.zhi) + '</div>'
-        + '<div class="p-hide">' + esc(p.hide) + '</div>'
-        + '<div class="p-hide-shen">' + esc(p.hideShen) + '</div>'
-        + '<div class="p-dishi">' + esc(p.dishi) + '</div>'
-        + '<div class="p-nayin">' + esc(p.nayin) + '</div>'
+        + (d.hide ? '<div class="p-hide">' + esc(p.hide) + '</div>' : '')
+        + (d.hideShen ? '<div class="p-hide-shen">' + esc(p.hideShen) + '</div>' : '')
+        + (d.dishi ? '<div class="p-dishi">' + esc(p.dishi) + '</div>' : '')
+        + (d.nayin ? '<div class="p-nayin">' + esc(p.nayin) + '</div>' : '')
         + '</div>';
     }).join('');
 
@@ -330,12 +347,12 @@
       }).join('') + '</tr>';
     };
     var yunHtml = '<div class="yun-scroll"><table class="yun-table"><tbody>'
-      + yunRows('yun-shen', 'shen')
+      + (d.ganShen ? yunRows('yun-shen', 'shen') : '')
       + yunRows('yun-gan', 'gan')
       + yunRows('yun-zhi', 'zhi')
       + '<tr>' + r.yun.list.map(function (d) { return '<td class="yun-num">' + pad(d.age) + '</td>'; }).join('') + '</tr>'
       + '<tr>' + r.yun.list.map(function (d) { return '<td class="yun-num">' + String(d.year).slice(-2) + '</td>'; }).join('') + '</tr>'
-      + yunRows('yun-dishi', 'dishi')
+      + (d.dishi ? yunRows('yun-dishi', 'dishi') : '')
       + '</tbody></table></div>';
 
     $('result-content').innerHTML = ''
@@ -569,6 +586,22 @@
       }
       syncInputUI();
       $('region-modal').classList.add('hidden');
+    };
+
+    $('btn-result-settings').onclick = function () {
+      document.querySelectorAll('#settings-modal input[data-opt]').forEach(function (el) {
+        el.checked = !!state.display[el.dataset.opt];
+      });
+      $('settings-modal').classList.remove('hidden');
+    };
+    $('btn-settings-save').onclick = function () {
+      document.querySelectorAll('#settings-modal input[data-opt]').forEach(function (el) {
+        state.display[el.dataset.opt] = el.checked;
+      });
+      saveDisplay(state.display);
+      $('settings-modal').classList.add('hidden');
+      if (state.currentResult) renderResult(state.currentResult);
+      toast('显示设置已保存');
     };
 
     $('btn-calculate').onclick = function () { calculate(); };
