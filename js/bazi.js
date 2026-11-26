@@ -99,15 +99,22 @@
     return SHEN_ABBR[full] || full || '';
   }
 
-  function dishi(dayGan, zhi) {
+  function diShiIndex(dayGan, zhi) {
     var offset = LunarUtil.CHANG_SHENG_OFFSET[dayGan];
     // 地支索引用 0-11（子=0），与库内部 getZhiIndex 一致
     var zhiIndex = LunarUtil.ZHI.indexOf(zhi) - 1;
     var ganIndex = LunarUtil.GAN.indexOf(dayGan) - 1;
     var index = offset + (ganIndex % 2 === 0 ? zhiIndex : -zhiIndex);
-    index = ((index % 12) + 12) % 12;
-    var full = LunarUtil.CHANG_SHENG[index];
+    return ((index % 12) + 12) % 12;
+  }
+
+  function dishi(dayGan, zhi) {
+    var full = LunarUtil.CHANG_SHENG[diShiIndex(dayGan, zhi)];
     return DISHI_ABBR[full] || full || '';
+  }
+
+  function dishiFull(dayGan, zhi) {
+    return LunarUtil.CHANG_SHENG[diShiIndex(dayGan, zhi)] || '';
   }
 
   /**
@@ -145,6 +152,8 @@
     var ganShens = [ec.getYearShiShenGan(), ec.getMonthShiShenGan(), ec.getDayShiShenGan(), ec.getTimeShiShenGan()];
     var dishis = [ec.getYearDiShi(), ec.getMonthDiShi(), ec.getDayDiShi(), ec.getTimeDiShi()];
     var nayins = [ec.getYearNaYin(), ec.getMonthNaYin(), ec.getDayNaYin(), ec.getTimeNaYin()];
+    var taiyuan = ec.getTaiYuan ? ec.getTaiYuan() : '';
+    var minggong = ec.getMingGong ? ec.getMingGong() : '';
 
     var pillars = [];
     for (var i = 0; i < 4; i++) {
@@ -190,7 +199,9 @@
         zhi: zhi,
         age: d.getStartAge(),
         year: d.getStartYear(),
+        endYear: d.getEndYear ? d.getEndYear() : (d.getStartYear() + 9),
         dishi: zhi ? dishi(dayGan, zhi) : '',
+        dishiFull: zhi ? dishiFull(dayGan, zhi) : '',
         liunian: liunianList
       };
     });
@@ -233,6 +244,14 @@
       weekday: '星期' + solar.getWeekInChinese(),
       ageText: ageText(beijing),
       pillars: pillars,
+      taiyuan: {
+        ganzhi: taiyuan,
+        nayin: LunarUtil.NAYIN[taiyuan] || ''
+      },
+      minggong: {
+        ganzhi: minggong,
+        nayin: LunarUtil.NAYIN[minggong] || ''
+      },
       liunian: liunian,
       yun: {
         startText: '命主从' + yun.getStartYear() + '岁' + yun.getStartMonth() + '月' + yun.getStartDay() + '天开始行大运',
