@@ -585,6 +585,24 @@ html, body {
 }
 .region-chip.selected { color: #fff; background: var(--blue); border-color: var(--blue); }
 
+.export-actions { display: flex; gap: 10px; margin-bottom: 12px; }
+.export-list { max-height: 46vh; overflow-y: auto; }
+.export-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 2px; border-bottom: 1px solid #eee; cursor: pointer;
+}
+.export-item:last-child { border-bottom: 0; }
+.export-item input[type="checkbox"] {
+  flex: 0 0 auto; width: 22px; height: 22px;
+  accent-color: var(--blue); cursor: pointer;
+}
+.export-item-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.export-item-name { font-size: 16px; font-weight: 500; color: #222; }
+.export-item-meta {
+  font-size: 13px; color: #777;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 .dialog {
   position: relative;
   width: calc(100% - 60px);
