@@ -94,32 +94,28 @@
   }
 
   function buildPillarsTable(result, disp) {
-    var labelW = 1500;
-    var colW = 2062;
-    var widths = [labelW, colW, colW, colW, colW];
+    var colW = Math.floor(9746 / 4);
+    var widths = [colW, colW, colW, colW];
     var rows = [];
 
-    function addRow(label, values, opts) {
+    function addRow(values, opts) {
       opts = opts || {};
-      var r = [cell(cellPara(label, { bold: true, size: 21 }), labelW, 'F7F7F7')];
-      values.forEach(function (v) {
-        r.push(cell(cellPara(v, {
-          size: opts.size || 21,
+      rows.push(values.map(function (v) {
+        return cell(cellPara(v, {
+          size: 21,
           bold: !!opts.bold,
-          color: opts.color || '000000',
-          font: opts.font || '宋体'
-        }), colW, 'FFFFFF'));
-      });
-      rows.push(r.join(''));
+          color: opts.color || '000000'
+        }), colW, 'FFFFFF');
+      }).join(''));
     }
 
-    if (disp.ganShen) addRow('十神', result.pillars.map(function (p) { return p.ganShen; }));
-    addRow('天干', result.pillars.map(function (p) { return p.gan; }), { bold: true, color: 'F0451F' });
-    addRow('地支', result.pillars.map(function (p) { return p.zhi; }), { bold: true, color: 'F0451F' });
-    if (disp.hide) addRow('藏干', result.pillars.map(function (p) { return p.hide; }));
-    if (disp.hideShen) addRow('藏干十神', result.pillars.map(function (p) { return p.hideShen; }));
-    if (disp.dishi) addRow('十二长生', result.pillars.map(function (p) { return p.dishi; }));
-    if (disp.nayin) addRow('纳音', result.pillars.map(function (p) { return p.nayin; }), { color: '8E44AD' });
+    if (disp.ganShen) addRow(result.pillars.map(function (p) { return p.ganShen; }));
+    addRow(result.pillars.map(function (p) { return p.gan; }), { bold: true, color: 'F0451F' });
+    addRow(result.pillars.map(function (p) { return p.zhi; }), { bold: true, color: 'F0451F' });
+    if (disp.hide) addRow(result.pillars.map(function (p) { return p.hide; }));
+    if (disp.hideShen) addRow(result.pillars.map(function (p) { return p.hideShen; }));
+    if (disp.dishi) addRow(result.pillars.map(function (p) { return p.dishi; }));
+    if (disp.nayin) addRow(result.pillars.map(function (p) { return p.nayin; }), { color: '8E44AD' });
     return table(rows, widths);
   }
 
@@ -127,30 +123,27 @@
   function buildDayunTable(result, disp) {
     var list = (result.yun && result.yun.list) || [];
     if (!list.length) return '';
-    var labelW = 1180;
-    var colW = Math.floor((9746 - labelW) / list.length);
-    var widths = [labelW];
+    var colW = Math.floor(9746 / list.length);
+    var widths = [];
     for (var i = 0; i < list.length; i++) widths.push(colW);
     var rows = [];
 
-    function addRow(label, values, opts) {
+    function addRow(values, opts) {
       opts = opts || {};
-      var r = [cell(cellPara(label, { bold: true }), labelW, 'F7F7F7')];
-      values.forEach(function (v) {
-        r.push(cell(cellPara(v, {
+      rows.push(values.map(function (v) {
+        return cell(cellPara(v, {
           bold: !!opts.bold,
           color: opts.color || '000000'
-        }), colW, 'FFFFFF'));
-      });
-      rows.push(r.join(''));
+        }), colW, 'FFFFFF');
+      }).join(''));
     }
 
-    if (disp.ganShen) addRow('十神', list.map(function (d) { return d.shen; }));
-    addRow('天干', list.map(function (d) { return d.gan; }), { bold: true, color: '2F5FE0' });
-    addRow('地支', list.map(function (d) { return d.zhi; }), { bold: true, color: '2F5FE0' });
-    addRow('起运岁', list.map(function (d) { return String(d.age); }));
-    addRow('交运年', list.map(function (d) { return String(d.year); }));
-    if (disp.dishi) addRow('地势', list.map(function (d) { return d.dishi; }), { color: 'C81E1E' });
+    if (disp.ganShen) addRow(list.map(function (d) { return d.shen; }));
+    addRow(list.map(function (d) { return d.gan; }), { bold: true, color: '2F5FE0' });
+    addRow(list.map(function (d) { return d.zhi; }), { bold: true, color: '2F5FE0' });
+    addRow(list.map(function (d) { return pad(d.age); }));
+    addRow(list.map(function (d) { return String(d.year).slice(-2); }));
+    if (disp.dishi) addRow(list.map(function (d) { return d.dishi; }), { color: 'C81E1E' });
     return table(rows, widths);
   }
 
