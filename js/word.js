@@ -127,6 +127,42 @@
     return table(rows, widths);
   }
 
+  // 原始大运表（流年关闭时使用）
+  function buildDayunTable(result, disp) {
+    var list = (result.yun && result.yun.list) || [];
+    if (!list.length) return '';
+    var labelW = 1180;
+    var colW = Math.floor((9746 - labelW) / list.length);
+    var widths = [labelW];
+    for (var i = 0; i < list.length; i++) widths.push(colW);
+
+    var header = [cell(cellPara('项目', { bold: true }), labelW, 'EDEDED')];
+    list.forEach(function (_, i) {
+      header.push(cell(cellPara('第' + (i + 1) + '运', { bold: true }), colW, 'EDEDED'));
+    });
+    var rows = [header.join('')];
+
+    function addRow(label, values, opts) {
+      opts = opts || {};
+      var r = [cell(cellPara(label, { bold: true }), labelW, 'F7F7F7')];
+      values.forEach(function (v) {
+        r.push(cell(cellPara(v, {
+          bold: !!opts.bold,
+          color: opts.color || '000000'
+        }), colW, 'FFFFFF'));
+      });
+      rows.push(r.join(''));
+    }
+
+    if (disp.ganShen) addRow('十神', list.map(function (d) { return d.shen; }));
+    addRow('天干', list.map(function (d) { return d.gan; }), { bold: true, color: '2F5FE0' });
+    addRow('地支', list.map(function (d) { return d.zhi; }), { bold: true, color: '2F5FE0' });
+    addRow('起运岁', list.map(function (d) { return String(d.age); }));
+    addRow('交运年', list.map(function (d) { return String(d.year); }));
+    if (disp.dishi) addRow('地势', list.map(function (d) { return d.dishi; }), { color: 'C81E1E' });
+    return table(rows, widths);
+  }
+
   // 大运与流年合并表：每步大运一列，十年流年逐行排在同列下方
   function buildDayunLiunianTable(result, disp) {
     var list = (result.yun && result.yun.list) || [];
@@ -189,10 +225,10 @@
     if (result.correctionText) html += infoLine('真太阳时', result.correctionText.replace(/^真太阳时：/, ''));
     html += infoLine('农历', result.lunarText);
     html += infoLine('年龄', result.ageText + '，' + result.weekday);
-    if (result.taiyuan && result.taiyuan.ganzhi) {
+    if (disp.liunian && result.taiyuan && result.taiyuan.ganzhi) {
       html += infoLine('胎元', result.taiyuan.ganzhi + (result.taiyuan.nayin ? '（' + result.taiyuan.nayin + '）' : ''));
     }
-    if (result.minggong && result.minggong.ganzhi) {
+    if (disp.liunian && result.minggong && result.minggong.ganzhi) {
       html += infoLine('命宫', result.minggong.ganzhi + (result.minggong.nayin ? '（' + result.minggong.nayin + '）' : ''));
     }
     html += infoLine('四柱', result.pillars.map(function (p) { return p.gan + p.zhi; }).join('  '));
@@ -200,10 +236,17 @@
     html += sectionTitle('一、四柱排盘');
     html += buildPillarsTable(result, disp);
 
-    html += sectionTitle('二、大运与流年');
-    html += para(run(result.yun.startText), { after: 40 });
-    html += para(run(result.yun.jiaoText), { after: 80 });
-    html += buildDayunLiunianTable(result, disp);
+    if (disp.liunian) {
+      html += sectionTitle('二、大运与流年');
+      html += para(run(result.yun.startText), { after: 40 });
+      html += para(run(result.yun.jiaoText), { after: 80 });
+      html += buildDayunLiunianTable(result, disp);
+    } else {
+      html += sectionTitle('二、大运');
+      html += para(run(result.yun.startText), { after: 40 });
+      html += para(run(result.yun.jiaoText), { after: 80 });
+      html += buildDayunTable(result, disp);
+    }
 
     html += sectionTitle('三、备注');
     html += para(run(inp.remark || '无'), { after: 120 });
