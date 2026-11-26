@@ -341,54 +341,66 @@
         + '</div>';
     }).join('');
 
-    var yunRows = function (cls, key, suffix) {
-      return '<tr>' + r.yun.list.map(function (d) {
-        return '<td class="' + cls + '">' + esc(d[key] + (suffix || '')) + '</td>';
-      }).join('') + '</tr>';
-    };
-    var yunHtml = '<div class="yun-scroll"><table class="yun-table"><tbody>'
-      + (d.ganShen ? yunRows('yun-shen', 'shen') : '')
-      + yunRows('yun-gan', 'gan')
-      + yunRows('yun-zhi', 'zhi')
-      + '<tr>' + r.yun.list.map(function (d) { return '<td class="yun-num">' + pad(d.age) + '</td>'; }).join('') + '</tr>'
-      + '<tr>' + r.yun.list.map(function (d) { return '<td class="yun-num">' + String(d.year).slice(-2) + '</td>'; }).join('') + '</tr>'
-      + (d.dishi ? yunRows('yun-dishi', 'dishi') : '')
-      + '</tbody></table></div>';
+    var yunList = (r.yun && r.yun.list) || [];
+    var firstYun = yunList[0];
+    var yunCaption = firstYun
+      ? '<div class="yun-caption">大运 ' + esc(firstYun.gan + firstYun.zhi) + '起 · 虚岁 ' + esc(firstYun.age) + '</div>'
+      : '';
 
-    // 每步大运对应的 10 个流年
-    var liunianHtml = '';
-    if (d.liunian && r.yun && r.yun.list && r.yun.list.length) {
-      var groups = '';
-      r.yun.list.forEach(function (dayun, gi) {
-        var list = dayun.liunian || [];
-        if (!list.length) return;
-        var col = function (cls, key) {
-          return '<tr>' + list.map(function (ln) { return '<td class="' + cls + '">' + esc(ln[key]) + '</td>'; }).join('') + '</tr>';
-        };
-        var first = list[0].year;
-        var last = list[list.length - 1].year;
-        var table = '<div class="yun-scroll"><table class="yun-table liunian-table"><tbody>'
-          + '<tr>' + list.map(function (ln) { return '<td class="liunian-year">' + ln.year + '</td>'; }).join('') + '</tr>'
-          + '<tr>' + list.map(function (ln) { return '<td class="liunian-gz">' + esc(ln.ganzhi) + '</td>'; }).join('') + '</tr>'
-          + (d.ganShen ? col('liunian-shen', 'shen') : '')
-          + (d.dishi ? col('liunian-dishi', 'dishi') : '')
-          + (d.nayin ? col('liunian-nayin', 'nayin') : '')
-          + '</tbody></table></div>';
-        groups += '<div class="liunian-group">'
-          + '<div class="liunian-group-title">第' + (gi + 1) + '步 ' + esc(dayun.gan + dayun.zhi)
-          + '运 · ' + dayun.age + '岁起（' + first + '–' + last + '）</div>'
-          + table + '</div>';
+    var yunRowHtml = [];
+    function addYunRow(label, values, cls) {
+      var cells = values.map(function (v) {
+        return '<td class="' + cls + '">' + esc(v == null ? '' : v) + '</td>';
+      }).join('');
+      yunRowHtml.push('<tr><td class="yun-label">' + esc(label) + '</td>' + cells + '</tr>');
+    }
+
+    if (d.ganShen) addYunRow('十神', yunList.map(function (x) { return x.shen; }), 'yun-shen');
+    addYunRow('大运', yunList.map(function (x) { return x.gan + x.zhi; }), 'yun-gan');
+    if (d.dishi) addYunRow('地势', yunList.map(function (x) { return x.dishiFull || x.dishi; }), 'yun-dishi');
+    addYunRow('虚岁', yunList.map(function (x) { return String(x.age); }), 'yun-num');
+    addYunRow('始于', yunList.map(function (x) { return String(x.year); }), 'yun-year');
+    if (d.liunian) {
+      var maxLiunian = 0;
+      yunList.forEach(function (x) {
+        maxLiunian = Math.max(maxLiunian, (x.liunian || []).length);
       });
-      liunianHtml = '<div class="liunian-section">'
-        + '<div class="liunian-head">流年（每步大运十年）</div>' + groups + '</div>';
+      for (var li = 0; li < maxLiunian; li++) {
+        (function (idx) {
+          addYunRow('流年' + (idx + 1), yunList.map(function (x) {
+            var ln = (x.liunian || [])[idx];
+            return ln ? ln.ganzhi : '';
+          }), 'yun-liunian');
+        })(li);
+      }
+    }
+    addYunRow('止于', yunList.map(function (x) {
+      return String(x.endYear != null ? x.endYear : x.year + 9);
+    }), 'yun-year');
+
+    var yunHtml = yunCaption
+      + '<div class="yun-intro"><p>' + esc(r.yun.startText) + '</p><p>' + esc(r.yun.jiaoText) + '</p></div>'
+      + (yunList.length
+        ? '<div class="yun-scroll"><table class="yun-table"><tbody>' + yunRowHtml.join('') + '</tbody></table></div>'
+        : '');
+
+    var palaceHtml = '';
+    if (r.taiyuan || r.minggong) {
+      var tai = r.taiyuan || {};
+      var ming = r.minggong || {};
+      palaceHtml = '<div class="palace-row">'
+        + '<div><span>胎元</span><b>' + esc(tai.ganzhi || '') + '</b>'
+        + (tai.nayin ? '<em>（' + esc(tai.nayin) + '）</em>' : '') + '</div>'
+        + '<div><span>命宫</span><b>' + esc(ming.ganzhi || '') + '</b>'
+        + (ming.nayin ? '<em>（' + esc(ming.nayin) + '）</em>' : '') + '</div>'
+        + '</div>';
     }
 
     $('result-content').innerHTML = ''
       + '<div class="result-info">' + info + '</div>'
       + '<div class="pillars">' + pillars + '</div>'
-      + '<div class="yun-intro"><p>' + esc(r.yun.startText) + '</p><p>' + esc(r.yun.jiaoText) + '</p></div>'
       + yunHtml
-      + liunianHtml
+      + palaceHtml
       + '<div class="result-remark" data-edit-remark="result">'
       + '<div class="result-remark-head"><span>备注</span><span class="result-remark-edit">点击修改</span></div>'
       + '<div class="result-remark-text' + (r.input.remark ? '' : ' empty') + '">'
