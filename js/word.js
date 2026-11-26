@@ -15,13 +15,17 @@
       .replace(/'/g, '&apos;');
   }
 
+  // 全文档统一：宋体五号（10.5pt = 21 半点）；仅保留加粗与颜色层次
+  var FONT = '宋体';
+  var SIZE = 21;
+
   function run(text, o) {
     o = o || {};
     var pr = '<w:rPr>';
-    pr += '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="' + (o.font || '宋体') + '"/>';
+    pr += '<w:rFonts w:ascii="' + FONT + '" w:hAnsi="' + FONT + '" w:eastAsia="' + FONT + '" w:cs="' + FONT + '"/>';
     if (o.bold) pr += '<w:b/><w:bCs/>';
     if (o.color) pr += '<w:color w:val="' + o.color + '"/>';
-    if (o.size) pr += '<w:sz w:val="' + o.size + '"/><w:szCs w:val="' + o.size + '"/>';
+    pr += '<w:sz w:val="' + SIZE + '"/><w:szCs w:val="' + SIZE + '"/>';
     pr += '</w:rPr>';
     var t = String(text == null ? '' : text).split('\n');
     var body = '';
@@ -35,6 +39,7 @@
   function para(content, o) {
     o = o || {};
     var pPr = '<w:pPr>';
+    if (o.pageBreakBefore) pPr += '<w:pageBreakBefore/>';
     pPr += '<w:jc w:val="' + (o.align || 'left') + '"/>';
     if (o.before || o.after || o.line) {
       pPr += '<w:spacing' +
@@ -160,11 +165,8 @@
 
   function buildCaseBody(result, index, total) {
     var html = '';
-    if (index > 0) {
-      html += para(run('', {}), { after: 0 }) ;
-      html += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-    }
-    html += para(run('八字排盘命例', { bold: true, size: 36, font: '微软雅黑' }), { align: 'center', after: 80 });
+    // 从第二例起强制另起一页，保证一个命例独占一页
+    html += para(run('八字排盘命例', { bold: true }), { align: 'center', after: 80, pageBreakBefore: index > 0 });
     if (total > 1) {
       html += para(run('第 ' + (index + 1) + ' / ' + total + ' 例', { size: 18, color: '777777' }), { align: 'center', after: 120 });
     }
@@ -227,7 +229,7 @@
   var STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<w:styles xmlns:w="' + NS_W + '">' +
     '<w:docDefaults><w:rPrDefault><w:rPr>' +
-    '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="宋体"/><w:sz w:val="21"/><w:szCs w:val="21"/>' +
+    '<w:rFonts w:ascii="宋体" w:hAnsi="宋体" w:eastAsia="宋体" w:cs="宋体"/><w:sz w:val="21"/><w:szCs w:val="21"/>' +
     '</w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
     '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
     '</w:styles>';
