@@ -343,49 +343,70 @@
 
     var yunList = (r.yun && r.yun.list) || [];
     var firstYun = yunList[0];
-    var yunCaption = firstYun
-      ? '<div class="yun-caption">大运 ' + esc(firstYun.gan + firstYun.zhi) + '起 · 虚岁 ' + esc(firstYun.age) + '</div>'
-      : '';
+    var yunIntroHtml = '<div class="yun-intro"><p>' + esc(r.yun.startText) + '</p><p>' + esc(r.yun.jiaoText) + '</p></div>';
+    var yunHtml = '';
 
-    var yunRowHtml = [];
-    function addYunRow(label, values, cls) {
-      var cells = values.map(function (v) {
-        return '<td class="' + cls + '">' + esc(v == null ? '' : v) + '</td>';
-      }).join('');
-      yunRowHtml.push('<tr><td class="yun-label">' + esc(label) + '</td>' + cells + '</tr>');
-    }
-
-    if (d.ganShen) addYunRow('十神', yunList.map(function (x) { return x.shen; }), 'yun-shen');
-    addYunRow('大运', yunList.map(function (x) { return x.gan + x.zhi; }), 'yun-gan');
-    if (d.dishi) addYunRow('地势', yunList.map(function (x) { return x.dishiFull || x.dishi; }), 'yun-dishi');
-    addYunRow('虚岁', yunList.map(function (x) { return String(x.age); }), 'yun-num');
-    addYunRow('始于', yunList.map(function (x) { return String(x.year); }), 'yun-year');
     if (d.liunian) {
+      var yunCaption = firstYun
+        ? '<div class="yun-caption">大运 ' + esc(firstYun.gan + firstYun.zhi) + '起 · 虚岁 ' + esc(firstYun.age) + '</div>'
+        : '';
+
+      var flowRows = [];
+      function addFlowRow(label, values, cls) {
+        var cells = values.map(function (v) {
+          return '<td class="' + cls + '">' + esc(v == null ? '' : v) + '</td>';
+        }).join('');
+        flowRows.push('<tr><td class="flow-label">' + esc(label) + '</td>' + cells + '</tr>');
+      }
+
+      if (d.ganShen) addFlowRow('十神', yunList.map(function (x) { return x.shen; }), 'flow-shen');
+      addFlowRow('大运', yunList.map(function (x) { return x.gan + x.zhi; }), 'flow-gan');
+      if (d.dishi) addFlowRow('地势', yunList.map(function (x) { return x.dishiFull || x.dishi; }), 'flow-dishi');
+      addFlowRow('虚岁', yunList.map(function (x) { return String(x.age); }), 'flow-num');
+      addFlowRow('始于', yunList.map(function (x) { return String(x.year); }), 'flow-year');
+
       var maxLiunian = 0;
       yunList.forEach(function (x) {
         maxLiunian = Math.max(maxLiunian, (x.liunian || []).length);
       });
       for (var li = 0; li < maxLiunian; li++) {
         (function (idx) {
-          addYunRow('流年' + (idx + 1), yunList.map(function (x) {
+          addFlowRow('流年' + (idx + 1), yunList.map(function (x) {
             var ln = (x.liunian || [])[idx];
             return ln ? ln.ganzhi : '';
-          }), 'yun-liunian');
+          }), 'flow-liunian');
         })(li);
       }
-    }
-    addYunRow('止于', yunList.map(function (x) {
-      return String(x.endYear != null ? x.endYear : x.year + 9);
-    }), 'yun-year');
 
-    var yunHtml = yunCaption
-      + '<div class="yun-intro"><p>' + esc(r.yun.startText) + '</p><p>' + esc(r.yun.jiaoText) + '</p></div>'
-      + (yunList.length
-        ? '<div class="yun-scroll"><table class="yun-table"><tbody>' + yunRowHtml.join('') + '</tbody></table></div>'
-        : '');
+      addFlowRow('止于', yunList.map(function (x) {
+        return String(x.endYear != null ? x.endYear : x.year + 9);
+      }), 'flow-year');
+
+      yunHtml = yunCaption + yunIntroHtml
+        + (yunList.length
+          ? '<div class="yun-scroll"><table class="yun-table yun-table-flow"><tbody>' + flowRows.join('') + '</tbody></table></div>'
+          : '');
+    } else {
+      function classicRows(cls, key) {
+        return '<tr>' + yunList.map(function (x) {
+          return '<td class="' + cls + '">' + esc(x[key] == null ? '' : x[key]) + '</td>';
+        }).join('') + '</tr>';
+      }
+      yunHtml = yunIntroHtml
+        + (yunList.length
+          ? '<div class="yun-scroll"><table class="yun-table"><tbody>'
+            + (d.ganShen ? classicRows('yun-shen', 'shen') : '')
+            + classicRows('yun-gan', 'gan')
+            + classicRows('yun-zhi', 'zhi')
+            + '<tr>' + yunList.map(function (x) { return '<td class="yun-num">' + pad(x.age) + '</td>'; }).join('') + '</tr>'
+            + '<tr>' + yunList.map(function (x) { return '<td class="yun-num">' + String(x.year).slice(-2) + '</td>'; }).join('') + '</tr>'
+            + (d.dishi ? classicRows('yun-dishi', 'dishi') : '')
+            + '</tbody></table></div>'
+          : '');
+    }
 
     var palaceHtml = '';
-    if (r.taiyuan || r.minggong) {
+    if (d.liunian && (r.taiyuan || r.minggong)) {
       var tai = r.taiyuan || {};
       var ming = r.minggong || {};
       palaceHtml = '<div class="palace-row">'
