@@ -2,6 +2,9 @@
 (function () {
   'use strict';
 
+  // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
+  var APP_VERSION = 'v16';
+
   var $ = function (id) { return document.getElementById(id); };
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -474,7 +477,7 @@
       + '<div class="result-remark-text' + (r.input.remark ? '' : ' empty') + '">'
       + (r.input.remark ? esc(r.input.remark) : '暂无备注，点击添加')
       + '</div></div>'
-      + '<div class="result-tail">八字排盘 · 结果仅供传统文化研究参考</div>';
+      + '<div class="result-tail">八字排盘 ' + APP_VERSION + ' · 结果仅供传统文化研究参考</div>';
   }
 
   /* ---------- 命例页 ---------- */
@@ -911,6 +914,8 @@
   }
 
   /* ---------- 启动 ---------- */
+  var versionEl = $('app-version');
+  if (versionEl) versionEl.textContent = '八字排盘 · 版本 ' + APP_VERSION;
   syncInputUI();
   bind();
 })();
