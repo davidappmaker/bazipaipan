@@ -716,8 +716,8 @@ html, body {
   min-width: 0;
   height: 220px;
   overflow-y: scroll;
-  scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -729,7 +729,6 @@ html, body {
   text-align: center;
   font-size: 19px;
   color: #222;
-  scroll-snap-align: center;
   white-space: nowrap;
 }
 .wheel-item.far { color: #aaa; }
