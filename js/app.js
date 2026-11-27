@@ -53,6 +53,19 @@
     return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes() };
   }
 
+  // 默认显示日期：农历模式下把今天的公历换算成农历
+  function defaultDisplayDate(cal) {
+    var n = nowParts();
+    if (cal === 'lunar') {
+      var lunar = Solar.fromYmd(n.year, n.month, n.day).getLunar();
+      return {
+        year: lunar.getYear(), month: lunar.getMonth(), day: lunar.getDay(),
+        hour: n.hour, minute: n.minute
+      };
+    }
+    return n;
+  }
+
   var DISPLAY_KEY = 'bazi_pwa_display_v1';
   var DISPLAY_DEFAULT = { hide: true, hideShen: true, ganShen: true, dishi: true, nayin: true, liunian: true };
   function loadDisplay() {
@@ -75,8 +88,8 @@
     remark: '',
     date: todayStr(),
     time: timeStr(),
-    calendar: 'solar',
-    displayDate: nowParts(),
+    calendar: 'lunar',
+    displayDate: defaultDisplayDate('lunar'),
     region: { name: '未知地-即北京时间', longitude: null },
     save: true,
     currentResult: null,
@@ -106,9 +119,14 @@
     sound: true, timer: null
   };
   var audioCtx = null;
+  var lastTickAt = 0;
 
   function tickSound() {
     if (!picker.sound) return;
+    // 快速连续滑动时节流，避免声音/震动过于密集造成卡顿
+    var now = Date.now();
+    if (now - lastTickAt < 45) return;
+    lastTickAt = now;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -198,24 +216,39 @@
     $('dt-solar-preview').textContent = '对应公历：' + s.year + '-' + pad(s.month) + '-' + pad(s.day) + ' ' + pad(s.hour) + ':' + pad(s.minute);
   }
 
+  var ITEM_H = 40;
+  function snapWheel(col, key) {
+    var items = col._items || [];
+    if (!items.length) return;
+    var idx = Math.max(0, Math.min(items.length - 1, Math.round(col.scrollTop / ITEM_H)));
+    var target = idx * ITEM_H;
+    if (Math.abs(col.scrollTop - target) < 1) return;
+    if (col.scrollTo) {
+      try { col.scrollTo({ top: target, behavior: 'smooth' }); return; } catch (e) {}
+    }
+    col.scrollTop = target;
+  }
+
   function onWheelScroll(e) {
     var col = e.currentTarget;
     var key = col.dataset.key;
     var items = col._items;
     if (!items || !items.length) return;
-    var idx = Math.round(col.scrollTop / 40);
+    var idx = Math.round(col.scrollTop / ITEM_H);
     if (idx < 0 || idx >= items.length) return;
     var value = items[idx].value;
-    if (picker[key] === value) return;
-    picker[key] = value;
-    tickSound();
+    if (picker[key] !== value) {
+      picker[key] = value;
+      tickSound();
+    }
     clearTimeout(picker.timer);
     picker.timer = setTimeout(function () {
       clampPicker();
       if (key === 'year') renderWheelCol('month');
       if (key === 'year' || key === 'month') renderWheelCol('day');
       updatePickerPreview();
-    }, 130);
+      snapWheel(col, key);
+    }, 120);
   }
 
   function openPicker() {
@@ -290,6 +323,19 @@
       displayDate: state.displayDate,
       region: state.region
     };
+  }
+
+  // 回到主界面准备新建命例：清空上一次的姓名与备注，时间恢复默认农历
+  function resetForNewCase() {
+    state.name = '';
+    state.remark = '';
+    state.date = todayStr();
+    state.time = timeStr();
+    state.calendar = 'lunar';
+    state.displayDate = defaultDisplayDate('lunar');
+    state.currentCaseId = null;
+    state.currentResult = null;
+    syncInputUI();
   }
 
   function calculate(saveOverride) {
@@ -627,9 +673,9 @@
     $('btn-input-back').onclick = function () { showView('cases'); };
     $('btn-goto-cases').onclick = function () { state.currentCaseId = null; showView('cases'); };
     $('btn-result-back').onclick = function () { showView(state.resultOrigin === 'cases' ? 'cases' : 'input'); };
-    $('btn-result-to-input').onclick = function () { state.currentCaseId = null; showView('input'); };
-    $('btn-cases-back').onclick = function () { state.currentCaseId = null; showView('input'); };
-    $('btn-empty-to-input').onclick = function () { showView('input'); };
+    $('btn-result-to-input').onclick = function () { resetForNewCase(); showView('input'); };
+    $('btn-cases-back').onclick = function () { resetForNewCase(); showView('input'); };
+    $('btn-empty-to-input').onclick = function () { resetForNewCase(); showView('input'); };
 
     $('input-name').oninput = function () { state.name = this.value; };
     $('input-remark').oninput = function () { state.remark = this.value; };
