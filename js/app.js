@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v20';
+  var APP_VERSION = 'v21';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -383,7 +383,7 @@
       + '<p>出生地区：' + esc(r.input.region.name || '未知') + '</p>'
       + '<p>北京时间：' + esc(r.beijingText) + '</p>';
     if (r.correctionText) info += '<p>' + esc(r.correctionText) + '</p>';
-    info += '<p>虚岁：' + esc(r.xuAge) + '岁 · 年龄：' + esc(r.ageText) + '。出生当日:' + esc(r.weekday) + '</p>'
+    info += '<p>虚岁：' + esc(r.xuAge) + '岁 · 年龄：' + esc(r.ageText) + '</p>'
       + '<p>农历：' + esc(r.lunarText) + '</p>';
 
     var d = state.display;
