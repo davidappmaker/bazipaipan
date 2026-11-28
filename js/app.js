@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v24';
+  var APP_VERSION = 'v25';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -119,6 +119,8 @@
     name: '',
     gender: 1,
     remark: '',
+    category: '',
+    categoryFilter: null,
     date: todayStr(),
     time: timeStr(),
     calendar: 'lunar',
@@ -416,6 +418,7 @@
   function syncInputUI() {
     $('input-name').value = state.name;
     $('input-remark').value = state.remark;
+    $('input-category').value = state.category || '';
     $('datetime-text').textContent = formatDisplayDate(state.calendar, state.displayDate);
     $('region-text').textContent = '地区：' + state.region.name;
     document.querySelectorAll('.gender-option').forEach(function (b) {
@@ -430,6 +433,7 @@
       name: state.name,
       gender: state.gender,
       remark: state.remark,
+      category: state.category,
       date: state.date,
       time: state.time,
       calendar: state.calendar,
@@ -442,6 +446,7 @@
   function resetForNewCase() {
     state.name = '';
     state.remark = '';
+    state.category = '';
     state.date = todayStr();
     state.time = timeStr();
     state.calendar = 'lunar';
@@ -591,14 +596,45 @@
   }
 
   /* ---------- 命例页 ---------- */
+  function refreshCategoryOptions() {
+    var dl = $('category-options');
+    if (!dl) return;
+    dl.innerHTML = CaseStore.categories().map(function (c) {
+      return '<option value="' + esc(c) + '"></option>';
+    }).join('');
+  }
+
+  function renderCategoryBar() {
+    var bar = $('category-bar');
+    var all = CaseStore.list();
+    bar.classList.toggle('hidden', all.length === 0);
+    if (!all.length) { bar.innerHTML = ''; return; }
+    var chips = [{ label: '全部', value: null }];
+    CaseStore.categories().forEach(function (c) { chips.push({ label: c, value: c }); });
+    var hasUncategorized = all.some(function (c) { return !c.category; });
+    if (hasUncategorized) chips.push({ label: '未分类', value: '' });
+    // 当前筛选已不存在时回到全部
+    if (state.categoryFilter !== null && !chips.some(function (x) { return x.value === state.categoryFilter; })) {
+      state.categoryFilter = null;
+    }
+    bar.innerHTML = chips.map(function (x) {
+      var on = state.categoryFilter === x.value;
+      return '<button type="button" class="category-chip' + (on ? ' selected' : '') + '" data-cat="'
+        + esc(x.value === null ? '__all__' : x.value) + '">' + esc(x.label) + '</button>';
+    }).join('');
+  }
+
   function visibleCases() {
     var all = CaseStore.list();
+    if (state.categoryFilter !== null) {
+      all = all.filter(function (c) { return (c.category || '') === state.categoryFilter; });
+    }
     var q = String(state.searchQuery || '').trim().toLowerCase();
     if (!q) return all;
     return all.filter(function (c) {
       var lunar = (c.calendar === 'lunar' && c.displayDate && c.displayDate.year)
         ? formatDisplayDate('lunar', c.displayDate) : '';
-      var fields = [c.name, c.remark, c.date, c.time, (c.region && c.region.name), lunar];
+      var fields = [c.name, c.remark, c.category, c.date, c.time, (c.region && c.region.name), lunar];
       for (var i = 0; i < fields.length; i++) {
         if (String(fields[i] || '').toLowerCase().indexOf(q) !== -1) return true;
       }
@@ -609,11 +645,15 @@
   function renderCases() {
     var cases = visibleCases();
     var listEl = $('cases-list');
+    renderCategoryBar();
+    refreshCategoryOptions();
     $('cases-empty').classList.toggle('hidden', cases.length > 0);
     var searching = !!String(state.searchQuery || '').trim();
-    $('cases-empty-title').textContent = searching ? '没有找到匹配的命例' : '还没有保存任何命例';
-    $('cases-empty-sub').textContent = searching ? '试试其他姓名、备注或日期关键词' : '在排盘界面打开“保存此八字”后排盘即可保存';
-    $('btn-empty-to-input').classList.toggle('hidden', searching);
+    var filtering = state.categoryFilter !== null;
+    $('cases-empty-title').textContent = searching || filtering ? '没有找到匹配的命例' : '还没有保存任何命例';
+    $('cases-empty-sub').textContent = searching ? '试试其他姓名、备注或日期关键词'
+      : (filtering ? '当前分类下没有命例，试试“全部”' : '在排盘界面打开“保存此八字”后排盘即可保存');
+    $('btn-empty-to-input').classList.toggle('hidden', searching || filtering);
     listEl.classList.toggle('manage-mode', state.manageMode);
     $('btn-manage-cases').textContent = state.manageMode ? '完成' : '管理';
     $('case-toolbar').classList.toggle('hidden', !state.manageMode);
@@ -624,11 +664,13 @@
       var meta = (c.calendar === 'lunar' && c.displayDate && c.displayDate.year)
         ? formatDisplayDate('lunar', c.displayDate)
         : '公历：' + c.date + ' ' + c.time;
+      var cat = String(c.category || '').trim();
       return '<div class="case-item' + (selected ? ' selected' : '') + '" data-id="' + esc(c.id) + '">'
         + '<input type="checkbox" class="case-check" ' + (selected ? 'checked' : '') + ' data-id="' + esc(c.id) + '" aria-label="选择命例">'
         + '<div class="case-main" data-open="' + esc(c.id) + '">'
         + '<div class="case-meta">'
         + '<span class="case-name">' + esc(c.name || '未命名') + '</span>'
+        + (cat ? '<span class="case-cat" title="' + esc(cat) + '">' + esc(cat) + '</span>' : '')
         + '<span class="case-gender">' + (c.gender === 0 ? '女' : '男') + '</span>'
         + '<span class="case-time">' + esc(meta) + '</span>'
         + '</div>'
@@ -648,6 +690,7 @@
     state.name = c.name || '';
     state.gender = c.gender;
     state.remark = c.remark || '';
+    state.category = c.category || '';
     state.date = c.date;
     state.time = c.time;
     state.calendar = c.calendar === 'lunar' ? 'lunar' : 'solar';
@@ -730,6 +773,8 @@
     editCaseTarget = id;
     editCaseGender = c.gender === 0 ? 0 : 1;
     $('case-edit-name').value = c.name || '';
+    $('case-edit-category').value = c.category || '';
+    refreshCategoryOptions();
     document.querySelectorAll('#case-edit-gender .gender-option').forEach(function (b) {
       b.classList.toggle('selected', Number(b.dataset.gender) === editCaseGender);
     });
@@ -740,11 +785,13 @@
   function saveCaseEdit() {
     if (!editCaseTarget) return;
     var name = $('case-edit-name').value.trim();
-    var ok = CaseStore.update(editCaseTarget, { name: name, gender: editCaseGender });
+    var category = $('case-edit-category').value.trim();
+    var ok = CaseStore.update(editCaseTarget, { name: name, gender: editCaseGender, category: category });
     if (!ok) { toast('保存失败'); return; }
     // 性别影响大运顺逆：若当前结果页正显示该命例，重新排盘
     if (state.currentCaseId === editCaseTarget) {
       state.name = name;
+      state.category = category;
       state.gender = editCaseGender;
       if (state.currentResult) {
         try {
@@ -758,6 +805,26 @@
     $('case-edit-modal').classList.add('hidden');
     editCaseTarget = null;
     toast('命例已更新');
+  }
+
+  function openBatchCategory() {
+    var ids = selectedIds();
+    if (!ids.length) { toast('请先勾选命例'); return; }
+    $('category-modal-note').textContent = '将选中的 ' + ids.length + ' 条命例设为同一分类';
+    $('batch-category').value = '';
+    refreshCategoryOptions();
+    $('category-modal').classList.remove('hidden');
+  }
+
+  function applyBatchCategory(value) {
+    var ids = selectedIds();
+    if (!ids.length) { toast('请先勾选命例'); return; }
+    var n = 0;
+    ids.forEach(function (id) { if (CaseStore.update(id, { category: value })) n++; });
+    state.selected = {};
+    renderCases();
+    $('category-modal').classList.add('hidden');
+    toast(value ? ('已将 ' + n + ' 条命例归入「' + value + '」') : ('已清除 ' + n + ' 条命例的分类'));
   }
 
   function askConfirm(title, message, action) {
@@ -832,6 +899,7 @@
 
     $('input-name').oninput = function () { state.name = this.value; };
     $('input-remark').oninput = function () { state.remark = this.value; };
+    $('input-category').oninput = function () { state.category = this.value.trim(); };
 
     document.querySelectorAll('.gender-option').forEach(function (b) {
       b.onclick = function () {
@@ -1000,6 +1068,9 @@
         toast('已删除 ' + n + ' 条命例');
       });
     };
+    $('btn-set-category').onclick = openBatchCategory;
+    $('btn-category-save').onclick = function () { applyBatchCategory($('batch-category').value.trim()); };
+    $('btn-category-clear').onclick = function () { applyBatchCategory(''); };
     $('btn-export-all').onclick = openExportModal;
     $('btn-export-select-all').onclick = function () {
       CaseStore.list().forEach(function (c) { state.exportSelected[c.id] = true; });
@@ -1045,6 +1116,13 @@
     document.addEventListener('click', function (e) {
       var close = e.target.closest('[data-close]');
       if (close) { $(close.dataset.close).classList.add('hidden'); return; }
+      var catChip = e.target.closest('.category-chip');
+      if (catChip) {
+        var raw = catChip.dataset.cat;
+        state.categoryFilter = raw === '__all__' ? null : raw;
+        renderCases();
+        return;
+      }
       var remark = e.target.closest('[data-edit-remark]');
       if (remark) { openRemarkEditor(remark.dataset.editRemark); return; }
       var editCase = e.target.closest('[data-edit-case]');
