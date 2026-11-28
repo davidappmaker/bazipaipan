@@ -517,16 +517,21 @@ html, body {
 .case-remark .remark-tag { color: #a07d2a; font-size: 12px; margin-right: 4px; }
 .case-remark.empty { color: #aaa; }
 .case-remark.hidden { display: none; }
-.case-del {
+.case-edit, .case-del {
   flex: 0 0 auto;
   border: 0;
   background: transparent;
-  color: var(--danger);
   font-family: inherit;
   font-size: 15px;
-  padding: 8px 6px;
+  padding: 8px 5px;
   cursor: pointer;
 }
+.case-edit { color: var(--blue); }
+.case-del { color: var(--danger); }
+
+.case-edit-dialog { text-align: left; }
+.case-edit-dialog .form-row { min-height: 44px; }
+.case-edit-dialog .gender-switch { margin-left: auto; }
 .case-item.selected { border-color: var(--blue); background: #f2f8ff; }
 .cases-list.manage-mode .case-check { display: block; }
 .case-check { display: none; }
