@@ -200,6 +200,29 @@
   </div>
 </div>
 
+<!-- ============ 命例编辑弹层 ============ -->
+<div class="modal hidden" id="case-edit-modal">
+  <div class="modal-backdrop" data-close="case-edit-modal"></div>
+  <div class="dialog case-edit-dialog">
+    <h2>修改命例</h2>
+    <div class="form-row">
+      <label class="form-label" for="case-edit-name">姓名</label>
+      <input id="case-edit-name" class="text-input" type="text" maxlength="20" autocomplete="off" placeholder="求测人姓名">
+    </div>
+    <div class="form-row" style="margin-top:12px">
+      <span class="form-label">性别</span>
+      <div class="gender-switch" id="case-edit-gender">
+        <button type="button" class="gender-option selected" data-gender="1">男</button>
+        <button type="button" class="gender-option" data-gender="0">女</button>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="footer-btn" data-close="case-edit-modal">取消</button>
+      <button type="button" class="footer-btn primary" id="btn-case-edit-save">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ 显示设置弹层 ============ -->
 <div class="modal hidden" id="settings-modal">
   <div class="modal-backdrop" data-close="settings-modal"></div>
