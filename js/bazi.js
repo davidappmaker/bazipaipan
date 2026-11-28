@@ -240,7 +240,7 @@
       solarTime: solarTime,
       correctionText: correctionText,
       beijingText: fmtBeijing(beijing),
-      lunarText: solar.getYear() + '年' + lunar.getMonthInChinese() + '月' + lunar.getDayInChinese() + '日' + timeZhiName(solarTime.hour),
+      lunarText: lunar.getYear() + '年' + lunar.getMonthInChinese() + '月' + lunar.getDayInChinese() + '日' + timeZhiName(solarTime.hour),
       weekday: '星期' + solar.getWeekInChinese(),
       ageText: ageText(beijing),
       pillars: pillars,
