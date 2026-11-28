@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v16';
+  var APP_VERSION = 'v17';
 
   var $ = function (id) { return document.getElementById(id); };
 
