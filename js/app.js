@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v25';
+  var APP_VERSION = 'v26';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -658,6 +658,10 @@
     $('btn-manage-cases').textContent = state.manageMode ? '完成' : '管理';
     $('case-toolbar').classList.toggle('hidden', !state.manageMode);
     $('cases-footer').classList.toggle('hidden', state.manageMode);
+    // 在具体分类下，删除只移出分类，命例仍保留在“全部”中
+    var inNamedCategory = state.categoryFilter !== null && state.categoryFilter !== '';
+    $('btn-delete-selected').textContent = inNamedCategory ? '批量移出' : '批量删除';
+    $('btn-delete-selected').classList.toggle('danger', !inNamedCategory);
 
     listEl.innerHTML = cases.map(function (c) {
       var selected = !!state.selected[c.id];
@@ -679,7 +683,9 @@
         + '</div>'
         + '</div>'
         + '<button type="button" class="case-edit" data-edit-case="' + esc(c.id) + '">修改</button>'
-        + '<button type="button" class="case-del" data-del="' + esc(c.id) + '">删除</button>'
+        + (inNamedCategory
+          ? '<button type="button" class="case-edit" data-unassign="' + esc(c.id) + '">移出</button>'
+          : '<button type="button" class="case-del" data-del="' + esc(c.id) + '">删除</button>')
         + '</div>';
     }).join('');
   }
@@ -825,6 +831,18 @@
     renderCases();
     $('category-modal').classList.add('hidden');
     toast(value ? ('已将 ' + n + ' 条命例归入「' + value + '」') : ('已清除 ' + n + ' 条命例的分类'));
+  }
+
+  function unassignCases(ids) {
+    var n = 0;
+    ids.forEach(function (id) { if (CaseStore.update(id, { category: '' })) n++; });
+    state.selected = {};
+    renderCases();
+    toast('已移出 ' + n + ' 条命例，仍保留在“全部”中');
+  }
+
+  function categoryName() {
+    return state.categoryFilter === '' ? '未分类' : String(state.categoryFilter || '');
   }
 
   function askConfirm(title, message, action) {
@@ -1061,12 +1079,18 @@
     $('btn-delete-selected').onclick = function () {
       var ids = selectedIds();
       if (!ids.length) { toast('请先勾选命例'); return; }
-      askConfirm('批量删除', '确定删除选中的 ' + ids.length + ' 条命例吗？此操作不可恢复。', function () {
-        var n = CaseStore.remove(ids);
-        state.selected = {};
-        renderCases();
-        toast('已删除 ' + n + ' 条命例');
-      });
+      if (state.categoryFilter !== null && state.categoryFilter !== '') {
+        askConfirm('批量移出分类', '确定把选中的 ' + ids.length + ' 条命例从「' + categoryName() + '」移出吗？命例仍会保留在“全部”中。', function () {
+          unassignCases(ids);
+        });
+      } else {
+        askConfirm('批量删除', '确定删除选中的 ' + ids.length + ' 条命例吗？此操作不可恢复。', function () {
+          var n = CaseStore.remove(ids);
+          state.selected = {};
+          renderCases();
+          toast('已删除 ' + n + ' 条命例');
+        });
+      }
     };
     $('btn-set-category').onclick = openBatchCategory;
     $('btn-category-save').onclick = function () { applyBatchCategory($('batch-category').value.trim()); };
@@ -1129,6 +1153,15 @@
       if (editCase) {
         e.stopPropagation();
         openCaseEditor(editCase.dataset.editCase);
+        return;
+      }
+      var unassign = e.target.closest('[data-unassign]');
+      if (unassign) {
+        e.stopPropagation();
+        var uid = unassign.dataset.unassign;
+        askConfirm('移出分类', '确定把这条命例从「' + categoryName() + '」移出吗？命例仍会保留在“全部”中。', function () {
+          unassignCases([uid]);
+        });
         return;
       }
       var del = e.target.closest('[data-del]');
