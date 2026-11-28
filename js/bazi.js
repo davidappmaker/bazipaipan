@@ -3,6 +3,7 @@
   'use strict';
 
   var Solar = global.Solar;
+  var Lunar = global.Lunar;
   var LunarUtil = global.LunarUtil;
 
   var SHEN_ABBR = {
@@ -243,6 +244,7 @@
       lunarText: lunar.getYear() + '年' + lunar.getMonthInChinese() + '月' + lunar.getDayInChinese() + '日' + timeZhiName(solarTime.hour),
       weekday: '星期' + solar.getWeekInChinese(),
       ageText: ageText(beijing),
+      xuAge: (Lunar.fromDate(new Date()).getYear() - lunar.getYear() + 1),
       pillars: pillars,
       taiyuan: {
         ganzhi: taiyuan,
