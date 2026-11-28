@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v21';
+  var APP_VERSION = 'v22';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -308,6 +308,23 @@
     if (name === 'cases') renderCases();
     var pages = document.querySelectorAll('.view.active .page');
     if (pages.length) pages[0].scrollTop = 0;
+  }
+
+  // 返回上一页：按当前视图决定去向，供返回按钮与边缘右滑手势共用
+  function goBack() {
+    var active = document.querySelector('.view.active');
+    if (!active) return false;
+    if (active.id === 'view-input') {
+      showView('cases');
+    } else if (active.id === 'view-result') {
+      showView(state.resultOrigin === 'cases' ? 'cases' : 'input');
+    } else if (active.id === 'view-cases') {
+      resetForNewCase();
+      showView('input');
+    } else {
+      return false;
+    }
+    return true;
   }
 
   /* ---------- 输入页 ---------- */
@@ -721,11 +738,11 @@
 
   /* ---------- 事件绑定 ---------- */
   function bind() {
-    $('btn-input-back').onclick = function () { showView('cases'); };
+    $('btn-input-back').onclick = goBack;
     $('btn-goto-cases').onclick = function () { state.currentCaseId = null; showView('cases'); };
-    $('btn-result-back').onclick = function () { showView(state.resultOrigin === 'cases' ? 'cases' : 'input'); };
+    $('btn-result-back').onclick = goBack;
     $('btn-result-to-input').onclick = function () { resetForNewCase(); showView('input'); };
-    $('btn-cases-back').onclick = function () { resetForNewCase(); showView('input'); };
+    $('btn-cases-back').onclick = goBack;
     $('btn-empty-to-input').onclick = function () { resetForNewCase(); showView('input'); };
 
     $('input-name').oninput = function () { state.name = this.value; };
@@ -968,6 +985,98 @@
       state.confirmAction = null;
       if (fn) fn();
     };
+
+    bindSwipeBack();
+  }
+
+  // 左边缘右滑返回上一页
+  function bindSwipeBack() {
+    var EDGE = 40;        // 从屏幕左侧 40px 内开始
+    var THRESHOLD = 70;   // 右滑超过 70px 触发返回
+    var sx = 0, sy = 0, active = false, view = null, moved = false, blocked = false;
+
+    function anyModalOpen() {
+      return !!document.querySelector('.modal:not(.hidden)');
+    }
+
+    function resetView() {
+      if (view) {
+        view.style.transition = '';
+        view.style.transform = '';
+        view.style.opacity = '';
+      }
+      view = null;
+    }
+
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      var t = e.touches[0];
+      if (t.clientX > EDGE) { blocked = false; return; }
+      // 弹层打开时：接管手势但不返回，避免触发浏览器级边缘滑动导航
+      if (anyModalOpen()) { blocked = true; active = false; return; }
+      // 不在可横向滚动的表格内开始，避免与表格滑动冲突
+      if (t.target.closest && t.target.closest('.yun-scroll')) { blocked = false; return; }
+      blocked = false;
+      sx = t.clientX;
+      sy = t.clientY;
+      active = true;
+      moved = false;
+      view = document.querySelector('.view.active');
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function (e) {
+      if (blocked) {
+        // 弹层打开时阻止浏览器把边缘右滑当作页面导航
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
+      if (!active || !view) return;
+      var t = e.touches[0];
+      var dx = t.clientX - sx;
+      var dy = t.clientY - sy;
+      if (dx < 0) return;
+      if (dx <= Math.abs(dy)) return; // 以水平滑动为主才响应
+      moved = true;
+      if (e.cancelable) e.preventDefault();
+      var offset = Math.min(dx, window.innerWidth * 0.6);
+      view.style.transition = 'none';
+      view.style.transform = 'translateX(' + offset + 'px)';
+      view.style.opacity = String(Math.max(0.6, 1 - dx / (window.innerWidth * 2)));
+    }, { passive: false });
+
+    document.addEventListener('touchend', function (e) {
+      if (blocked) { blocked = false; return; }
+      if (!active) return;
+      active = false;
+      if (!view) return;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - sx;
+      var dy = t.clientY - sy;
+      var shouldBack = moved && dx >= THRESHOLD && dx > Math.abs(dy);
+      if (shouldBack) {
+        view.style.transition = 'transform .2s ease, opacity .2s ease';
+        view.style.transform = 'translateX(100%)';
+        var target = view;
+        setTimeout(function () {
+          target.style.transform = '';
+          target.style.opacity = '';
+          target.style.transition = '';
+          goBack();
+        }, 180);
+      } else {
+        view.style.transition = 'transform .18s ease, opacity .18s ease';
+        view.style.transform = '';
+        view.style.opacity = '';
+        setTimeout(function () { if (view) { view.style.transition = ''; } }, 200);
+      }
+      view = null;
+    }, { passive: true });
+
+    document.addEventListener('touchcancel', function () {
+      active = false;
+      blocked = false;
+      resetView();
+    }, { passive: true });
   }
 
   function renderRegionChips() {
