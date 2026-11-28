@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v19';
+  var APP_VERSION = 'v20';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -534,6 +534,7 @@
         + (c.remark ? '<span class="remark-tag">备注</span>' + esc(c.remark) : '点击添加备注')
         + '</div>'
         + '</div>'
+        + '<button type="button" class="case-edit" data-edit-case="' + esc(c.id) + '">修改</button>'
         + '<button type="button" class="case-del" data-del="' + esc(c.id) + '">删除</button>'
         + '</div>';
     }).join('');
@@ -616,6 +617,45 @@
     }
     $('remark-modal').classList.add('hidden');
     remarkTarget = null;
+  }
+
+  var editCaseTarget = null;
+  var editCaseGender = 1;
+
+  function openCaseEditor(id) {
+    var c = CaseStore.get(id);
+    if (!c) { toast('命例不存在'); return; }
+    editCaseTarget = id;
+    editCaseGender = c.gender === 0 ? 0 : 1;
+    $('case-edit-name').value = c.name || '';
+    document.querySelectorAll('#case-edit-gender .gender-option').forEach(function (b) {
+      b.classList.toggle('selected', Number(b.dataset.gender) === editCaseGender);
+    });
+    $('case-edit-modal').classList.remove('hidden');
+    setTimeout(function () { $('case-edit-name').focus(); }, 50);
+  }
+
+  function saveCaseEdit() {
+    if (!editCaseTarget) return;
+    var name = $('case-edit-name').value.trim();
+    var ok = CaseStore.update(editCaseTarget, { name: name, gender: editCaseGender });
+    if (!ok) { toast('保存失败'); return; }
+    // 性别影响大运顺逆：若当前结果页正显示该命例，重新排盘
+    if (state.currentCaseId === editCaseTarget) {
+      state.name = name;
+      state.gender = editCaseGender;
+      if (state.currentResult) {
+        try {
+          var r = Bazi.compute(currentInput());
+          state.currentResult = r;
+          renderResult(r);
+        } catch (e) {}
+      }
+    }
+    renderCases();
+    $('case-edit-modal').classList.add('hidden');
+    editCaseTarget = null;
+    toast('命例已更新');
   }
 
   function askConfirm(title, message, action) {
@@ -878,6 +918,12 @@
       if (close) { $(close.dataset.close).classList.add('hidden'); return; }
       var remark = e.target.closest('[data-edit-remark]');
       if (remark) { openRemarkEditor(remark.dataset.editRemark); return; }
+      var editCase = e.target.closest('[data-edit-case]');
+      if (editCase) {
+        e.stopPropagation();
+        openCaseEditor(editCase.dataset.editCase);
+        return;
+      }
       var del = e.target.closest('[data-del]');
       if (del) {
         e.stopPropagation();
@@ -907,6 +953,15 @@
     });
 
     $('btn-remark-save').onclick = saveRemark;
+    $('btn-case-edit-save').onclick = saveCaseEdit;
+    document.querySelectorAll('#case-edit-gender .gender-option').forEach(function (b) {
+      b.onclick = function () {
+        editCaseGender = Number(this.dataset.gender);
+        document.querySelectorAll('#case-edit-gender .gender-option').forEach(function (x) {
+          x.classList.toggle('selected', Number(x.dataset.gender) === editCaseGender);
+        });
+      };
+    });
     $('btn-confirm-ok').onclick = function () {
       $('confirm-modal').classList.add('hidden');
       var fn = state.confirmAction;
