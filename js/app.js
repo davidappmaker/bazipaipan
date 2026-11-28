@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v17';
+  var APP_VERSION = 'v18';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -215,8 +215,16 @@
   }
 
   function updatePickerPreview() {
+    var el = $('dt-solar-preview');
     var s = pickerToSolar(picker);
-    $('dt-solar-preview').textContent = '对应公历：' + s.year + '-' + pad(s.month) + '-' + pad(s.day) + ' ' + pad(s.hour) + ':' + pad(s.minute);
+    if (picker.cal === 'solar') {
+      // 选公历时显示对应的农历
+      var lunar = Solar.fromYmd(s.year, s.month, s.day).getLunar();
+      el.textContent = '对应农历：' + lunar.getYear() + '年' + lunar.getMonthInChinese() + '月' + lunar.getDayInChinese() + '日';
+    } else {
+      // 选农历时显示对应的公历
+      el.textContent = '对应公历：' + s.year + '-' + pad(s.month) + '-' + pad(s.day) + ' ' + pad(s.hour) + ':' + pad(s.minute);
+    }
   }
 
   var ITEM_H = 40;
@@ -375,7 +383,8 @@
       + '<p>出生地区：' + esc(r.input.region.name || '未知') + '</p>'
       + '<p>北京时间：' + esc(r.beijingText) + '</p>';
     if (r.correctionText) info += '<p>' + esc(r.correctionText) + '</p>';
-    info += '<p>年龄：' + esc(r.ageText) + '。出生当日:' + esc(r.weekday) + '</p>'
+    info += '<p>虚岁：' + esc(r.xuAge) + '岁</p>'
+      + '<p>年龄：' + esc(r.ageText) + '。出生当日:' + esc(r.weekday) + '</p>'
       + '<p>农历：' + esc(r.lunarText) + '</p>';
 
     var d = state.display;
