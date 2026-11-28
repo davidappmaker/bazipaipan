@@ -46,6 +46,13 @@
         </div>
       </div>
 
+      <div class="card card-line">
+        <div class="form-row">
+          <label class="form-label" for="input-category">分类</label>
+          <input id="input-category" class="text-input" type="text" placeholder="如：家人、客户、朋友" maxlength="20" list="category-options" autocomplete="off">
+        </div>
+      </div>
+
       <button type="button" class="field-button" id="btn-pick-datetime">
         <span id="datetime-text">公历：2026年11月26日 6:24</span>
       </button>
@@ -100,13 +107,15 @@
     </header>
 
     <div class="search-bar hidden" id="search-bar">
-      <input type="search" id="search-input" class="search-input" placeholder="搜索姓名、备注、日期、地区" autocomplete="off">
+      <input type="search" id="search-input" class="search-input" placeholder="搜索姓名、备注、分类、日期" autocomplete="off">
       <button type="button" id="btn-search-clear" class="search-clear">清除</button>
     </div>
+    <div class="category-bar" id="category-bar"></div>
 
     <main class="page page-cases">
       <div class="case-toolbar" id="case-toolbar">
         <button type="button" class="tool-btn" id="btn-select-all">全选</button>
+        <button type="button" class="tool-btn" id="btn-set-category">归类</button>
         <button type="button" class="tool-btn" id="btn-export-selected">导出选中</button>
         <button type="button" class="tool-btn danger" id="btn-delete-selected">批量删除</button>
       </div>
@@ -127,6 +136,9 @@
   </section>
 
 </div>
+
+<!-- 已有分类，供输入框联想 -->
+<datalist id="category-options"></datalist>
 
 <!-- ============ 滚轮时间选择弹层 ============ -->
 <div class="modal hidden" id="datetime-modal">
@@ -219,9 +231,31 @@
         <button type="button" class="gender-option" data-gender="0">女</button>
       </div>
     </div>
+    <div class="form-row" style="margin-top:12px">
+      <label class="form-label" for="case-edit-category">分类</label>
+      <input id="case-edit-category" class="text-input" type="text" maxlength="20" list="category-options" autocomplete="off" placeholder="如：家人、客户">
+    </div>
     <div class="dialog-actions">
       <button type="button" class="footer-btn" data-close="case-edit-modal">取消</button>
       <button type="button" class="footer-btn primary" id="btn-case-edit-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 批量归类弹层 ============ -->
+<div class="modal hidden" id="category-modal">
+  <div class="modal-backdrop" data-close="category-modal"></div>
+  <div class="dialog case-edit-dialog">
+    <h2>批量归类</h2>
+    <p class="sheet-note" id="category-modal-note">将选中的命例设为同一分类</p>
+    <div class="form-row">
+      <label class="form-label" for="batch-category">分类</label>
+      <input id="batch-category" class="text-input" type="text" maxlength="20" list="category-options" autocomplete="off" placeholder="输入分类名称">
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="footer-btn" data-close="category-modal">取消</button>
+      <button type="button" class="footer-btn" id="btn-category-clear">清除分类</button>
+      <button type="button" class="footer-btn primary" id="btn-category-save">保存</button>
     </div>
   </div>
 </div>
