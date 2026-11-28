@@ -34,6 +34,7 @@
       name: String(input.name || '').trim(),
       gender: input.gender === 0 ? 0 : 1,
       remark: String(input.remark || '').trim(),
+      category: String(input.category || '').trim().slice(0, 20),
       date: String(input.date || ''),
       time: String(input.time || ''),
       calendar: input.calendar === 'lunar' ? 'lunar' : 'solar',
@@ -95,10 +96,20 @@
     return write([]);
   }
 
+  // 所有已用过的分类（去重、排序），供筛选与输入联想使用
+  function categories() {
+    var set = {};
+    read().forEach(function (c) {
+      var v = String(c.category || '').trim();
+      if (v) set[v] = true;
+    });
+    return Object.keys(set).sort(function (a, b) { return a.localeCompare(b, 'zh-CN'); });
+  }
+
   function exportJSON() {
     return JSON.stringify({
       app: '八字排盘',
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       cases: list()
     }, null, 2);
@@ -133,6 +144,7 @@
     update: update,
     remove: remove,
     clear: clear,
+    categories: categories,
     exportJSON: exportJSON,
     importJSON: importJSON
   };
