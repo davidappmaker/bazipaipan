@@ -208,8 +208,7 @@
     html += infoLine('北京时间', result.beijingText);
     if (result.correctionText) html += infoLine('真太阳时', result.correctionText.replace(/^真太阳时：/, ''));
     html += infoLine('农历', result.lunarText);
-    html += infoLine('虚岁', result.xuAge + '岁');
-    html += infoLine('年龄', result.ageText + '，' + result.weekday);
+    html += infoLine('虚岁/年龄', result.xuAge + '岁，' + result.ageText + '，' + result.weekday);
     if (disp.liunian && result.taiyuan && result.taiyuan.ganzhi) {
       html += infoLine('胎元', result.taiyuan.ganzhi + (result.taiyuan.nayin ? '（' + result.taiyuan.nayin + '）' : ''));
     }
