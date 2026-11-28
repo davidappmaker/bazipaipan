@@ -1,5 +1,5 @@
 /* 八字排盘 PWA 离线缓存 */
-var CACHE_NAME = 'bazi-pwa-v18';
+var CACHE_NAME = 'bazi-pwa-v19';
 var APP_SHELL = [
   './',
   './index.html',
