@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v23';
+  var APP_VERSION = 'v24';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -150,7 +150,8 @@
   var feedbackPrefs = loadFeedback();
   var picker = {
     cal: 'solar', year: 2026, month: 1, day: 1, hour: 0, minute: 0,
-    sound: feedbackPrefs.sound, vibrate: feedbackPrefs.vibrate, timer: null
+    sound: feedbackPrefs.sound, vibrate: feedbackPrefs.vibrate,
+    timers: {}, verifyTimers: {}, touching: {}, pendingRefresh: {}
   };
   var audioCtx = null;
   var lastTickAt = 0;
@@ -179,7 +180,8 @@
 
   function tickVibration() {
     if (!picker.vibrate) return;
-    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+    // 12ms 太轻，改为 30ms 单脉冲，手感明显但仍是一格一下
+    try { if (navigator.vibrate) navigator.vibrate(30); } catch (e) {}
   }
 
   function pickerToSolar(p) {
@@ -263,16 +265,69 @@
   }
 
   var ITEM_H = 40;
+
+  function wheelIndex(col) {
+    var items = col._items || [];
+    if (!items.length) return 0;
+    return Math.max(0, Math.min(items.length - 1, Math.round(col.scrollTop / ITEM_H)));
+  }
+
+  // 平滑吸附后强制校正一次，防止快速滑动/动画被打断时停在半格，露出空行
   function snapWheel(col, key) {
     var items = col._items || [];
     if (!items.length) return;
-    var idx = Math.max(0, Math.min(items.length - 1, Math.round(col.scrollTop / ITEM_H)));
+    var idx = wheelIndex(col);
     var target = idx * ITEM_H;
+    // 以最终对齐的格子为准同步值，避免显示与选中值不一致
+    if (items[idx] && picker[key] !== items[idx].value) picker[key] = items[idx].value;
     if (Math.abs(col.scrollTop - target) < 1) return;
+    clearTimeout(picker.verifyTimers[key]);
     if (col.scrollTo) {
-      try { col.scrollTo({ top: target, behavior: 'smooth' }); return; } catch (e) {}
+      try {
+        col.scrollTo({ top: target, behavior: 'smooth' });
+        picker.verifyTimers[key] = setTimeout(function () {
+          if (Math.abs(col.scrollTop - target) >= 1) col.scrollTop = target;
+        }, 360);
+        return;
+      } catch (e) {}
     }
     col.scrollTop = target;
+  }
+
+  // 依赖列正在被手指滑动时先不重绘，避免重置它的滚动位置
+  function refreshColumn(key) {
+    if (picker.touching[key]) { picker.pendingRefresh[key] = true; return; }
+    renderWheelCol(key);
+  }
+
+  function finishWheel(col, key) {
+    if (!col.isConnected) return;
+    clampPicker();
+    if (key === 'year') {
+      refreshColumn('month');
+      refreshColumn('day');
+    } else if (key === 'month') {
+      refreshColumn('day');
+    }
+    updatePickerPreview();
+    snapWheel(col, key);
+  }
+
+  function scheduleSnap(col, key, delay) {
+    clearTimeout(picker.timers[key]);
+    picker.timers[key] = setTimeout(function () {
+      if (picker.touching[key]) return;   // 手指还没离开，交给 touchend 再排
+      finishWheel(col, key);
+    }, delay == null ? 140 : delay);
+  }
+
+  function resetWheelTimers() {
+    for (var k in picker.timers) clearTimeout(picker.timers[k]);
+    for (var k2 in picker.verifyTimers) clearTimeout(picker.verifyTimers[k2]);
+    picker.timers = {};
+    picker.verifyTimers = {};
+    picker.touching = {};
+    picker.pendingRefresh = {};
   }
 
   function onWheelScroll(e) {
@@ -280,25 +335,19 @@
     var key = col.dataset.key;
     var items = col._items;
     if (!items || !items.length) return;
-    var idx = Math.round(col.scrollTop / ITEM_H);
-    if (idx < 0 || idx >= items.length) return;
+    // 浏览器回弹时 idx 可能越界，夹到首/末项，避免漏掉最后一格
+    var idx = Math.max(0, Math.min(items.length - 1, Math.round(col.scrollTop / ITEM_H)));
     var value = items[idx].value;
     if (picker[key] !== value) {
       picker[key] = value;
       tickSound();
       tickVibration();
     }
-    clearTimeout(picker.timer);
-    picker.timer = setTimeout(function () {
-      clampPicker();
-      if (key === 'year') renderWheelCol('month');
-      if (key === 'year' || key === 'month') renderWheelCol('day');
-      updatePickerPreview();
-      snapWheel(col, key);
-    }, 120);
+    scheduleSnap(col, key);
   }
 
   function openPicker() {
+    resetWheelTimers();
     var d = state.date.split('-');
     var t = state.time.split(':');
     var solar = {
@@ -813,7 +862,26 @@
       if (picker.vibrate) tickVibration();
     };
     document.querySelectorAll('.wheel-col').forEach(function (col) {
+      var key = col.dataset.key;
       col.addEventListener('scroll', onWheelScroll, { passive: true });
+      col.addEventListener('touchstart', function () {
+        picker.touching[key] = true;
+        clearTimeout(picker.timers[key]);
+      }, { passive: true });
+      var onTouchEnd = function () {
+        picker.touching[key] = false;
+        if (picker.pendingRefresh[key]) {
+          delete picker.pendingRefresh[key];
+          renderWheelCol(key);
+        }
+        // 手指离开后惯性滚动还会继续，由后续 scroll 事件不断推迟吸附
+        scheduleSnap(col, key, 60);
+      };
+      col.addEventListener('touchend', onTouchEnd, { passive: true });
+      col.addEventListener('touchcancel', onTouchEnd, { passive: true });
+      if ('onscrollend' in window) {
+        col.addEventListener('scrollend', function () { scheduleSnap(col, key, 20); });
+      }
     });
     $('btn-datetime-confirm').onclick = function () {
       var s = pickerToSolar(picker);
@@ -825,6 +893,7 @@
       state.date = s.year + '-' + pad(s.month) + '-' + pad(s.day);
       state.time = pad(s.hour) + ':' + pad(s.minute);
       syncInputUI();
+      resetWheelTimers();
       $('datetime-modal').classList.add('hidden');
     };
 
