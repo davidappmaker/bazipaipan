@@ -3,7 +3,7 @@
   'use strict';
 
   // 软件版本号（单一来源）：更新时只需改这里 + sw.js 的 CACHE_NAME，同步脚本会校验两者一致
-  var APP_VERSION = 'v22';
+  var APP_VERSION = 'v23';
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -84,6 +84,36 @@
     try { localStorage.setItem(DISPLAY_KEY, JSON.stringify(o)); } catch (e) {}
   }
 
+  // 滚轮声音/震动开关（持久保存，避免每次进入都要重新设置）
+  var FEEDBACK_KEY = 'bazi_pwa_feedback_v1';
+  var FEEDBACK_DEFAULT = { sound: true, vibrate: true };
+  function loadFeedback() {
+    var out = {};
+    for (var k in FEEDBACK_DEFAULT) out[k] = FEEDBACK_DEFAULT[k];
+    try {
+      var raw = JSON.parse(localStorage.getItem(FEEDBACK_KEY) || '{}');
+      for (var k2 in FEEDBACK_DEFAULT) if (typeof raw[k2] === 'boolean') out[k2] = raw[k2];
+    } catch (e) {}
+    return out;
+  }
+  function saveFeedback() {
+    try {
+      localStorage.setItem(FEEDBACK_KEY, JSON.stringify({ sound: picker.sound, vibrate: picker.vibrate }));
+    } catch (e) {}
+  }
+  function syncFeedbackUI() {
+    var s = $('dt-sound-toggle');
+    var v = $('dt-vibrate-toggle');
+    if (s) {
+      s.textContent = '声音：' + (picker.sound ? '开' : '关');
+      s.classList.toggle('off', !picker.sound);
+    }
+    if (v) {
+      v.textContent = '震动：' + (picker.vibrate ? '开' : '关');
+      v.classList.toggle('off', !picker.vibrate);
+    }
+  }
+
   var state = {
     display: loadDisplay(),
     name: '',
@@ -117,16 +147,17 @@
   }
 
   /* ---------- 滚轮日期选择器 ---------- */
+  var feedbackPrefs = loadFeedback();
   var picker = {
     cal: 'solar', year: 2026, month: 1, day: 1, hour: 0, minute: 0,
-    sound: true, timer: null
+    sound: feedbackPrefs.sound, vibrate: feedbackPrefs.vibrate, timer: null
   };
   var audioCtx = null;
   var lastTickAt = 0;
 
   function tickSound() {
     if (!picker.sound) return;
-    // 快速连续滑动时节流，避免声音/震动过于密集造成卡顿
+    // 快速连续滑动时只节流声音，震动仍逐格触发
     var now = Date.now();
     if (now - lastTickAt < 45) return;
     lastTickAt = now;
@@ -136,15 +167,19 @@
       var osc = audioCtx.createOscillator();
       var gain = audioCtx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.035);
+      osc.frequency.setValueAtTime(1050, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.04);
+      osc.stop(audioCtx.currentTime + 0.055);
     } catch (e) {}
-    if (navigator.vibrate) navigator.vibrate(8);
+  }
+
+  function tickVibration() {
+    if (!picker.vibrate) return;
+    try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
   }
 
   function pickerToSolar(p) {
@@ -251,6 +286,7 @@
     if (picker[key] !== value) {
       picker[key] = value;
       tickSound();
+      tickVibration();
     }
     clearTimeout(picker.timer);
     picker.timer = setTimeout(function () {
@@ -766,8 +802,15 @@
     });
     $('dt-sound-toggle').onclick = function () {
       picker.sound = !picker.sound;
-      this.textContent = '声音：' + (picker.sound ? '开' : '关');
+      saveFeedback();
+      syncFeedbackUI();
       if (picker.sound) tickSound();
+    };
+    $('dt-vibrate-toggle').onclick = function () {
+      picker.vibrate = !picker.vibrate;
+      saveFeedback();
+      syncFeedbackUI();
+      if (picker.vibrate) tickVibration();
     };
     document.querySelectorAll('.wheel-col').forEach(function (col) {
       col.addEventListener('scroll', onWheelScroll, { passive: true });
@@ -1090,4 +1133,5 @@
   if (versionEl) versionEl.textContent = '八字排盘 · 版本 ' + APP_VERSION;
   syncInputUI();
   bind();
+  syncFeedbackUI();
 })();
